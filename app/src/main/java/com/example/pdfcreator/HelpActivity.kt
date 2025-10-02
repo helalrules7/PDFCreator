@@ -157,6 +157,26 @@ fun HelpScreen(
                 emoji = "📤"
             )
             
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Step 5: Edit PDF
+            HelpStepCard(
+                stepNumber = 5,
+                title = getString(R.string.help_step5_title),
+                description = getString(R.string.help_step5_desc),
+                emoji = "✏️"
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Step 6: View Files
+            HelpStepCard(
+                stepNumber = 6,
+                title = getString(R.string.help_step6_title),
+                description = getString(R.string.help_step6_desc),
+                emoji = "📁"
+            )
+            
             Spacer(modifier = Modifier.height(16.dp))
             
             // Tips Section
@@ -200,6 +220,16 @@ fun HelpScreen(
                     HelpTipItem(
                         emoji = "🌍",
                         tip = getString(R.string.help_tip4)
+                    )
+                    
+                    HelpTipItem(
+                        emoji = "✏️",
+                        tip = getString(R.string.help_tip5)
+                    )
+                    
+                    HelpTipItem(
+                        emoji = "📁",
+                        tip = getString(R.string.help_tip6)
                     )
                 }
             }

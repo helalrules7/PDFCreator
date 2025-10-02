@@ -62,6 +62,13 @@
             android:theme="@style/Theme.PDFCreator"
             android:parentActivityName=".MainActivity" />
         
+        <activity
+            android:name=".MyPDFsActivity"
+            android:exported="false"
+            android:label="@string/my_pdfs_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".MainActivity" />
+        
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

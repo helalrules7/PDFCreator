@@ -16,6 +16,7 @@
     
     <!-- Navigation Drawer -->
     <string name="menu_home">الرئيسية</string>
+    <string name="menu_my_pdfs">ملفاتي</string>
     <string name="menu_settings">اللغة</string>
     <string name="menu_about">حول</string>
     <string name="menu_help">المساعدة</string>
@@ -45,6 +46,10 @@
     <string name="feature_custom_titles_desc">أضف عنوان مخصص لملف PDF الخاص بك</string>
     <string name="feature_share_print">مشاركة وطباعة</string>
     <string name="feature_share_print_desc">شارك أو اطبع ملف PDF بسهولة</string>
+    <string name="feature_edit_pdf">تعديل PDF</string>
+    <string name="feature_edit_pdf_desc">تدوير وإعادة ترتيب صفحات PDF بسهولة</string>
+    <string name="feature_manage_files">إدارة الملفات</string>
+    <string name="feature_manage_files_desc">استعراض وحذف ملفات PDF المحفوظة</string>
     <string name="about_developer_title">مطور التطبيق</string>
     <string name="about_developer_name">Ahmed Helal</string>
     <string name="about_developer_email">me@ahmedhelal.dev</string>
@@ -68,12 +73,20 @@
     <string name="help_step4_title">مشاركة وطباعة</string>
     <string name="help_step4_desc">بعد إنشاء PDF، يمكنك مشاركته أو طباعته مباشرة من التطبيق.</string>
     
+    <string name="help_step5_title">تعديل PDF</string>
+    <string name="help_step5_desc">اضغط على \"تعديل PDF\" لتدوير الصفحات أو إعادة ترتيبها. يمكنك تدوير كل صفحة 90 درجة ونقل الصفحات لأعلى أو لأسفل.</string>
+    
+    <string name="help_step6_title">استعراض الملفات</string>
+    <string name="help_step6_desc">افتح \"ملفاتي\" من القائمة لاستعراض جميع ملفات PDF المحفوظة. يمكنك عرض أو حذف أي ملف.</string>
+    
     <!-- Help Tips -->
     <string name="help_tips_title">نصائح مفيدة</string>
     <string name="help_tip1">اختر صور عالية الجودة للحصول على أفضل نتيجة</string>
     <string name="help_tip2">يمكنك ترتيب الصور قبل إنشاء PDF</string>
     <string name="help_tip3">احفظ نسخة احتياطية من ملفات PDF المهمة</string>
     <string name="help_tip4">يمكنك تغيير اللغة من القائمة الجانبية</string>
+    <string name="help_tip5">استخدم ميزة تعديل PDF لتدوير الصفحات أو إعادة ترتيبها</string>
+    <string name="help_tip6">يمكنك الوصول لجميع ملفاتك من \"ملفاتي\" في القائمة</string>
     
     <!-- Troubleshooting -->
     <string name="help_troubleshooting_title">حل المشاكل</string>
@@ -133,4 +146,16 @@
     <string name="pdf_from_creator">ملف PDF من منشئ PDF</string>
     <string name="print_pdf_subject">طباعة PDF</string>
     <string name="unknown_error">خطأ غير معروف</string>
+    
+    <!-- My PDFs Activity -->
+    <string name="my_pdfs_title">ملفاتي</string>
+    <string name="no_pdfs_found">لا توجد ملفات PDF</string>
+    <string name="no_pdfs_message">لم يتم إنشاء أي ملفات PDF بعد.\nابدأ بإنشاء ملف PDF جديد من الشاشة الرئيسية!</string>
+    <string name="delete_pdf">حذف</string>
+    <string name="view_pdf">استعراض</string>
+    <string name="delete_confirmation">هل تريد حذف هذا الملف؟</string>
+    <string name="delete">حذف</string>
+    <string name="pdf_deleted">تم حذف الملف بنجاح</string>
+    <string name="error_deleting_pdf">خطأ في حذف الملف</string>
+    <string name="loading_pdfs">جاري تحميل الملفات...</string>
 </resources>

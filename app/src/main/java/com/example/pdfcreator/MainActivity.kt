@@ -127,6 +127,10 @@ fun PDFCreatorApp() {
         NavigationDrawer(
             isOpen = showDrawer,
             onClose = { showDrawer = false },
+            onNavigateToMyPDFs = {
+                val intent = Intent(context, MyPDFsActivity::class.java)
+                context.startActivity(intent)
+            },
             onNavigateToSettings = {
                 val intent = Intent(context, SettingsActivity::class.java)
                 context.startActivity(intent)

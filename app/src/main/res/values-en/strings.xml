@@ -16,6 +16,7 @@
     
     <!-- Navigation Drawer -->
     <string name="menu_home">Home</string>
+    <string name="menu_my_pdfs">My Files</string>
     <string name="menu_settings">Language</string>
     <string name="menu_about">About</string>
     <string name="menu_help">Help</string>
@@ -45,6 +46,10 @@
     <string name="feature_custom_titles_desc">Add custom title to your PDF file</string>
     <string name="feature_share_print">Share &amp; Print</string>
     <string name="feature_share_print_desc">Easily share or print your PDF files</string>
+    <string name="feature_edit_pdf">Edit PDF</string>
+    <string name="feature_edit_pdf_desc">Rotate and rearrange PDF pages easily</string>
+    <string name="feature_manage_files">Manage Files</string>
+    <string name="feature_manage_files_desc">View and delete saved PDF files</string>
     <string name="about_developer_title">Developer</string>
     <string name="about_developer_name">Ahmed Helal</string>
     <string name="about_developer_email">me@ahmedhelal.dev</string>
@@ -68,12 +73,20 @@
     <string name="help_step4_title">Sharing &amp; Printing</string>
     <string name="help_step4_desc">After creating PDF, you can share or print it directly from the app.</string>
     
+    <string name="help_step5_title">Edit PDF</string>
+    <string name="help_step5_desc">Tap \"Edit PDF\" to rotate pages or rearrange them. You can rotate each page by 90 degrees and move pages up or down.</string>
+    
+    <string name="help_step6_title">View Files</string>
+    <string name="help_step6_desc">Open \"My Files\" from the menu to view all saved PDF files. You can view or delete any file.</string>
+    
     <!-- Help Tips -->
     <string name="help_tips_title">Useful Tips</string>
     <string name="help_tip1">Choose high-quality images for the best result</string>
     <string name="help_tip2">You can reorder images before creating PDF</string>
     <string name="help_tip3">Keep backup copies of important PDF files</string>
     <string name="help_tip4">You can change language from the side menu</string>
+    <string name="help_tip5">Use Edit PDF feature to rotate pages or rearrange them</string>
+    <string name="help_tip6">You can access all your files from \"My Files\" in the menu</string>
     
     <!-- Troubleshooting -->
     <string name="help_troubleshooting_title">Troubleshooting</string>
@@ -133,4 +146,16 @@
     <string name="pdf_from_creator">PDF from PDF Creator</string>
     <string name="print_pdf_subject">Print PDF</string>
     <string name="unknown_error">Unknown error</string>
+    
+    <!-- My PDFs Activity -->
+    <string name="my_pdfs_title">My Files</string>
+    <string name="no_pdfs_found">No PDF files found</string>
+    <string name="no_pdfs_message">No PDF files have been created yet.\nStart by creating a new PDF from the home screen!</string>
+    <string name="delete_pdf">Delete</string>
+    <string name="view_pdf">View</string>
+    <string name="delete_confirmation">Do you want to delete this file?</string>
+    <string name="delete">Delete</string>
+    <string name="pdf_deleted">File deleted successfully</string>
+    <string name="error_deleting_pdf">Error deleting file</string>
+    <string name="loading_pdfs">Loading files...</string>
 </resources>

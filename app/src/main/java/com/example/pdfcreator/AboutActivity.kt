@@ -204,6 +204,18 @@ fun AboutScreen(
                         title = getString(R.string.feature_share_print),
                         description = getString(R.string.feature_share_print_desc)
                     )
+                    
+                    FeatureItem(
+                        emoji = "✏️",
+                        title = getString(R.string.feature_edit_pdf),
+                        description = getString(R.string.feature_edit_pdf_desc)
+                    )
+                    
+                    FeatureItem(
+                        emoji = "📁",
+                        title = getString(R.string.feature_manage_files),
+                        description = getString(R.string.feature_manage_files_desc)
+                    )
                 }
             }
             
