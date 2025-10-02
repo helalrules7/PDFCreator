@@ -1,0 +1,42 @@
+🎉 H PDF Creator v1.1.0 - Major Feature Update
+
+✨ NEW FEATURES:
+
+✏️ PDF Editing
+• Rotate pages by 90° increments
+• Rearrange pages with up/down controls
+• Live preview of changes
+• Save as new file with custom name
+
+📁 File Manager
+• Browse all created PDFs
+• View file details (size, date)
+• Quick view & delete actions
+• Smart date sorting
+
+🌐 Enhanced UI
+• New "My Files" menu item (📁)
+• Updated menu structure
+• Smooth transitions
+
+🐛 BUG FIXES:
+• Fixed incorrect page selection after reordering in Edit PDF
+
+📚 DOCUMENTATION:
+• Updated Help with new features
+• Enhanced About page
+• New usage tips
+
+🎨 TECHNICAL:
+• Material Design 3 throughout
+• Full Arabic & English support
+• Improved error handling
+
+---
+
+📥 Download APK below
+🔄 Backward compatible with v1.0.0
+🌍 Supports: Arabic (العربية) & English
+
+Full changelog: CHANGELOG.md
+
