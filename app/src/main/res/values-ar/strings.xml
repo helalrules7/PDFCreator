@@ -1,0 +1,50 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">H PDF Creator</string>
+    <string name="convert_images_to_pdf">تحويل الصور إلى PDF</string>
+    <string name="add_image">اضغط لإضافة صورة</string>
+    <string name="selected_images">الصور المختارة</string>
+    <string name="clear_all">مسح الكل</string>
+    <string name="create_pdf">إنشاء PDF</string>
+    <string name="no_images_selected">لم يتم اختيار أي صور بعد\nاضغط على الزر أعلاه لإضافة الصور</string>
+    <string name="pdf_ready">ملف PDF جاهز</string>
+    <string name="pdf_created_successfully">تم إنشاء ملف PDF بنجاح!</string>
+    <string name="file_saved_at">تم حفظ الملف في:</string>
+    <string name="file_info">معلومات الملف:</string>
+    <string name="pages_count">عدد الصفحات</string>
+    <string name="file_size">حجم الملف</string>
+    <string name="creation_date">تاريخ الإنشاء</string>
+    <string name="share_pdf">مشاركة PDF</string>
+    <string name="print_pdf">طباعة PDF</string>
+    <string name="open_pdf">فتح PDF</string>
+    <string name="create_new_pdf">إنشاء PDF جديد</string>
+    <string name="choose_print_app">اختر تطبيق الطباعة</string>
+    <string name="creating_pdf" tools:ignore="TypographyEllipsis">جاري إنشاء ملف PDF...</string>
+    <string name="error_creating_pdf">حدث خطأ في إنشاء ملف PDF</string>
+    <string name="please_select_images">يرجى اختيار صورة واحدة على الأقل</string>
+    <string name="error_creating_pdf_detailed">خطأ في إنشاء ملف PDF</string>
+    
+    <!-- Navigation Drawer -->
+    <string name="menu_home">الرئيسية</string>
+    <string name="menu_settings">الإعدادات</string>
+    <string name="menu_about">حول</string>
+    <string name="menu_help">المساعدة</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="language_settings">إعدادات اللغة</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_english">English</string>
+    <string name="settings_saved">تم حفظ الإعدادات</string>
+    <string name="restart_required">إعادة التشغيل مطلوبة لتغيير اللغة</string>
+    
+    <!-- About -->
+    <string name="about_title">حول التطبيق</string>
+    <string name="about_description">H PDF Creator - حول صورك إلى PDF بسهولة</string>
+    <string name="version">الإصدار</string>
+    
+    <!-- Help -->
+    <string name="help_title">المساعدة</string>
+    <string name="help_description">كيفية استخدام التطبيق</string>
+    <string name="unknown_error">خطأ غير معروف</string>
+</resources>

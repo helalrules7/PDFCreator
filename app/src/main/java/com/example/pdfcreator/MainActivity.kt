@@ -1,5 +1,6 @@
 package com.example.pdfcreator
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,15 +27,22 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.example.pdfcreator.ui.PDFCreatorViewModel
 import com.example.pdfcreator.ui.PDFViewScreen
 import com.example.pdfcreator.ui.ImagePickerScreen
+import com.example.pdfcreator.ui.NavigationDrawer
 import com.example.pdfcreator.ui.theme.PDFCreatorTheme
+import com.example.pdfcreator.utils.LanguageAwareComposable
+// Removed icons import - using text emoji instead
+import androidx.compose.material3.*
 
-class MainActivity : ComponentActivity() {
+class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         setContent {
-            PDFCreatorTheme {
-                PDFCreatorApp()
+            LanguageAwareComposable {
+                PDFCreatorTheme {
+                    PDFCreatorApp()
+                }
             }
         }
     }
@@ -46,6 +54,8 @@ fun PDFCreatorApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val viewModel: PDFCreatorViewModel = viewModel()
     var showPDFScreen by remember { mutableStateOf(false) }
+    var showDrawer by remember { mutableStateOf(false) }
+    
 
     // طلب الصلاحيات المطلوبة
     val permissionsState = rememberMultiplePermissionsState(
@@ -54,14 +64,48 @@ fun PDFCreatorApp() {
         )
     )
 
-    // طلب الصلاحيات عند بدء التطبيق (مرة واحدة فقط)
+    // طلب الصلاحيات عند بدء التطبيق (مرة مرة فقط)
     LaunchedEffect(Unit) {
         if (!permissionsState.allPermissionsGranted) {
             permissionsState.launchMultiplePermissionRequest()
         }
     }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+    Scaffold(
+        topBar = {
+            if (permissionsState.allPermissionsGranted) {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = { Text("🔒 H PDF Creator") },
+                    navigationIcon = {
+                        TextButton(onClick = { showDrawer = true }) {
+                            Text(
+                                text = "☰",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                        }
+                    }
+                )
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    ) { paddingValues ->
+        // Navigation Drawer
+        NavigationDrawer(
+            isOpen = showDrawer,
+            onClose = { showDrawer = false },
+            onNavigateToSettings = {
+                val intent = Intent(context, SettingsActivity::class.java)
+                context.startActivity(intent)
+            },
+            onNavigateToAbout = {
+                // TODO: Implement About screen
+            },
+            onNavigateToHelp = {
+                // TODO: Implement Help screen
+            }
+        )
+        
         if (!permissionsState.allPermissionsGranted) {
             // رسالة طلب الصلاحيات
             Column(
@@ -72,7 +116,7 @@ fun PDFCreatorApp() {
                 verticalArrangement = Arrangement.Center
             ) {
                     Text(
-                        text = "🔒 Rania PDF Creator",
+                        text = "🔒 H PDF Creator",
                         style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center
                     )

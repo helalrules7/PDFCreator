@@ -1,25 +1,74 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Rania PDF Creator</string>
+    <string name="app_name">H PDF Creator</string>
     <string name="convert_images_to_pdf">تحويل الصور إلى PDF</string>
-    <string name="add_image">اضغط لإضافة صورة</string>
     <string name="selected_images">الصور المختارة</string>
     <string name="clear_all">مسح الكل</string>
     <string name="create_pdf">إنشاء PDF</string>
-    <string name="no_images_selected">لم يتم اختيار أي صور بعد\nاضغط على الزر أعلاه لإضافة الصور</string>
     <string name="pdf_ready">ملف PDF جاهز</string>
-    <string name="pdf_created_successfully">تم إنشاء ملف PDF بنجاح!</string>
     <string name="file_saved_at">تم حفظ الملف في:</string>
     <string name="file_info">معلومات الملف:</string>
     <string name="pages_count">عدد الصفحات</string>
     <string name="file_size">حجم الملف</string>
     <string name="creation_date">تاريخ الإنشاء</string>
+    <string name="choose_print_app">اختر تطبيق الطباعة</string>
+    <string name="creating_pdf" tools:ignore="TypographyEllipsis">جاري إنشاء ملف PDF...</string>
+    <string name="please_select_images">يرجى اختيار صورة واحدة على الأقل</string>
+    
+    <!-- Navigation Drawer -->
+    <string name="menu_home">الرئيسية</string>
+    <string name="menu_settings">الإعدادات</string>
+    <string name="menu_about">حول</string>
+    <string name="menu_help">المساعدة</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="language_settings">إعدادات اللغة</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_english">English</string>
+    <string name="settings_saved">تم حفظ الإعدادات</string>
+    <string name="language_changed">تم تغيير اللغة بنجاح</string>
+    
+    <!-- About -->
+    <string name="about_title">حول التطبيق</string>
+    <string name="about_description">H PDF Creator - حول صورك إلى PDF بسهولة</string>
+    <string name="version">الإصدار</string>
+    
+    <!-- Help -->
+    <string name="help_title">المساعدة</string>
+    <string name="help_description">كيفية استخدام التطبيق</string>
+    
+    <!-- Permission Messages -->
+    <string name="permission_required_title">H PDF Creator</string>
+    <string name="permission_required_message">هذا التطبيق يحتاج صلاحية الوصول للصور لتحويلها إلى PDF\n\nاضغط على الزر أدناه لمنح الصلاحيات</string>
+    <string name="grant_permissions">منح الصلاحيات</string>
+    <string name="open_app_settings">فتح إعدادات التطبيق</string>
+    <string name="menu_icon">☰</string>
+    <string name="close">إغلاق</string>
+    
+    <!-- PDF View Screen -->
+    <string name="pdf_created_successfully">تم إنشاء ملف PDF بنجاح!</string>
     <string name="share_pdf">مشاركة PDF</string>
     <string name="print_pdf">طباعة PDF</string>
     <string name="open_pdf">فتح PDF</string>
     <string name="create_new_pdf">إنشاء PDF جديد</string>
-    <string name="choose_print_app">اختر تطبيق الطباعة</string>
-    <string name="creating_pdf" tools:ignore="TypographyEllipsis">جاري إنشاء ملف PDF...</string>
     <string name="error_creating_pdf">حدث خطأ في إنشاء ملف PDF</string>
-    <string name="please_select_images">يرجى اختيار صورة واحدة على الأقل</string>
-    <string name="error_creating_pdf_detailed">خطأ في إنشاء ملف PDF</string>
+    <string name="pdf_title">عنوان ملف PDF</string>
+    <string name="add_images">اضغط لإضافة صور</string>
+    <string name="add_images_subtitle">يمكنك اختيار أكثر من صورة مرة واحدة</string>
+    <string name="selected_images_count">الصور المختارة (%d)</string>
+    <string name="no_images_selected">لم يتم اختيار أي صور بعد</string>
+    <string name="no_images_instruction">اضغط على الزر أعلاه لإضافة الصور\nيمكنك اختيار أكثر من صورة مرة واحدة</string>
+    <string name="please_select_at_least_one_image">يرجى اختيار صورة واحدة على الأقل</string>
+    <string name="error_creating_pdf_detailed">خطأ في إنشاء ملف PDF: %s</string>
+    <string name="back">رجوع</string>
+    <string name="add_image">إضافة صورة</string>
+    <string name="remove_image">حذف الصورة</string>
+    <string name="close_error">إغلاق</string>
+    <string name="share_pdf_chooser">مشاركة PDF</string>
+    <string name="print_pdf_chooser">اختر تطبيق الطباعة</string>
+    <string name="print_pdf_chooser_alt">اختر تطبيق للطباعة</string>
+    <string name="pdf_from_creator">ملف PDF من منشئ PDF</string>
+    <string name="print_pdf_subject">طباعة PDF</string>
+    <string name="unknown_error">خطأ غير معروف</string>
 </resources>

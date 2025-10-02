@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
+import com.example.pdfcreator.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,12 +33,12 @@ fun PDFViewScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                    title = { Text("Rania PDF Creator") },
+                    title = { Text(getString(R.string.app_name)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = getString(R.string.back)
                         )
                     }
                 }
@@ -77,7 +78,7 @@ fun PDFViewScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "تم إنشاء ملف PDF بنجاح!",
+                    text = getString(R.string.pdf_created_successfully),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -103,7 +104,7 @@ fun PDFViewScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("مشاركة PDF")
+                        Text(getString(R.string.share_pdf))
                     }
 
                     Button(
@@ -113,7 +114,7 @@ fun PDFViewScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("🖨️ طباعة PDF")
+                        Text("🖨️ ${getString(R.string.print_pdf)}")
                     }
 
                     OutlinedButton(
@@ -123,7 +124,7 @@ fun PDFViewScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("فتح PDF")
+                        Text(getString(R.string.open_pdf))
                     }
 
                     OutlinedButton(
@@ -133,7 +134,7 @@ fun PDFViewScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("إنشاء PDF جديد")
+                        Text(getString(R.string.create_new_pdf))
                     }
                 }
             } else {
@@ -144,12 +145,12 @@ fun PDFViewScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "جاري إنشاء ملف PDF...",
+                        text = getString(R.string.creating_pdf),
                         fontSize = 18.sp
                     )
                 } else {
                     Text(
-                        text = "حدث خطأ في إنشاء ملف PDF",
+                        text = getString(R.string.error_creating_pdf),
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -175,12 +176,12 @@ private fun sharePDF(context: Context, pdfPath: String) {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "ملف PDF من منشئ PDF")
+                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.pdf_from_creator))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             android.util.Log.d("PDFCreator", "Starting share intent")
-            val chooser = Intent.createChooser(intent, "مشاركة PDF")
+            val chooser = Intent.createChooser(intent, context.getString(R.string.share_pdf_chooser))
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } else {
@@ -286,10 +287,10 @@ private fun printPDF(context: Context, pdfPath: String) {
                     val printIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
                         putExtra(Intent.EXTRA_STREAM, uri)
-                        putExtra(Intent.EXTRA_SUBJECT, "طباعة PDF")
+                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    val printChooser = Intent.createChooser(printIntent, "اختر تطبيق الطباعة")
+                    val printChooser = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser))
                     context.startActivity(printChooser)
                 }
             } catch (e: Exception) {
@@ -298,10 +299,10 @@ private fun printPDF(context: Context, pdfPath: String) {
                 val printIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, "طباعة PDF")
+                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                val shareIntent = Intent.createChooser(printIntent, "اختر تطبيق للطباعة")
+                val shareIntent = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser_alt))
                 context.startActivity(shareIntent)
             }
         }
@@ -339,4 +340,11 @@ private fun formatDate(timestamp: Long): String {
     val date = java.util.Date(timestamp)
     val formatter = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
     return formatter.format(date)
+}
+
+// Helper function to get string resources
+@Composable
+private fun getString(@androidx.annotation.StringRes id: Int): String {
+    val context = LocalContext.current
+    return context.getString(id)
 }

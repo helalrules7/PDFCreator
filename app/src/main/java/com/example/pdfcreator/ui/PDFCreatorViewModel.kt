@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import com.example.pdfcreator.R
 
 data class PDFCreatorState(
     val selectedImages: List<Uri> = emptyList(),
@@ -67,7 +68,7 @@ class PDFCreatorViewModel : ViewModel() {
 
     fun createPDF(context: Context) {
         if (state.selectedImages.isEmpty()) {
-            state = state.copy(errorMessage = "يرجى اختيار صورة واحدة على الأقل")
+            state = state.copy(errorMessage = context.getString(R.string.please_select_at_least_one_image))
             return
         }
 
@@ -87,7 +88,7 @@ class PDFCreatorViewModel : ViewModel() {
                 e.printStackTrace() // إضافة log للخطأ
                 state = state.copy(
                     isCreatingPDF = false,
-                    errorMessage = "خطأ في إنشاء ملف PDF: ${e.message}"
+                    errorMessage = context.getString(R.string.error_creating_pdf_detailed, e.message ?: context.getString(R.string.unknown_error))
                 )
             }
         }
@@ -96,7 +97,7 @@ class PDFCreatorViewModel : ViewModel() {
     private suspend fun createPDFFile(context: Context, imageUris: List<Uri>): String {
         return withContext(Dispatchers.IO) {
             try {
-                val fileName = "Rania PDF Creator - ${state.pdfTitle}.pdf"
+                val fileName = "${context.getString(R.string.app_name)} - ${state.pdfTitle}.pdf"
                 val file = File(context.getExternalFilesDir(null), fileName)
                 val outputStream = FileOutputStream(file)
 

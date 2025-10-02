@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.example.pdfcreator.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -57,7 +58,7 @@ fun ImagePickerScreen(
     ) {
         // العنوان الرئيسي
         Text(
-            text = "Rania PDF Creator",
+            text = getString(R.string.app_name),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -70,7 +71,7 @@ fun ImagePickerScreen(
         OutlinedTextField(
             value = state.pdfTitle,
             onValueChange = { viewModel.updatePDFTitle(it) },
-            label = { Text("عنوان ملف PDF") },
+            label = { Text(getString(R.string.pdf_title)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -96,19 +97,19 @@ fun ImagePickerScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "إضافة صورة",
+                    contentDescription = getString(R.string.add_image),
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "اضغط لإضافة صور",
+                    text = getString(R.string.add_images),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "يمكنك اختيار أكثر من صورة مرة واحدة",
+                    text = getString(R.string.add_images_subtitle),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -120,7 +121,7 @@ fun ImagePickerScreen(
         // عرض الصور المختارة
         if (state.selectedImages.isNotEmpty()) {
             Text(
-                text = "الصور المختارة (${state.selectedImages.size})",
+                text = getString(R.string.selected_images_count, state.selectedImages.size),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -151,7 +152,7 @@ fun ImagePickerScreen(
                     onClick = { viewModel.clearImages() },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("مسح الكل")
+                    Text(getString(R.string.clear_all))
                 }
 
                 Button(
@@ -169,7 +170,7 @@ fun ImagePickerScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("إنشاء PDF")
+                    Text(getString(R.string.create_pdf))
                 }
             }
         } else {
@@ -189,14 +190,14 @@ fun ImagePickerScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "لم يتم اختيار أي صور بعد",
+                        text = getString(R.string.no_images_selected),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "اضغط على الزر أعلاه لإضافة الصور\nيمكنك اختيار أكثر من صورة مرة واحدة",
+                        text = getString(R.string.no_images_instruction),
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -229,7 +230,7 @@ fun ImagePickerScreen(
                     IconButton(onClick = { viewModel.clearError() }) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "إغلاق",
+                            contentDescription = getString(R.string.close_error),
                             tint = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
@@ -251,7 +252,7 @@ fun ImageItem(
     ) {
         Image(
             painter = rememberAsyncImagePainter(imageUri),
-            contentDescription = "صورة مختارة",
+            contentDescription = getString(R.string.selected_images),
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
@@ -268,10 +269,17 @@ fun ImageItem(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "حذف الصورة",
+                contentDescription = getString(R.string.remove_image),
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
         }
     }
+}
+
+// Helper function to get string resources
+@Composable
+private fun getString(@androidx.annotation.StringRes id: Int, vararg args: Any): String {
+    val context = LocalContext.current
+    return context.getString(id, *args)
 }
