@@ -181,7 +181,7 @@ Perfect for:
 
 ## 🐛 Known Issues
 
-None currently. [Report an issue](https://github.com/yourusername/PDFCreator/issues) if you find one!
+None currently. [Report an issue](https://github.com/helalrules7/PDFCreator/issues) if you find one!
 
 ## 🗺️ Roadmap
 
@@ -230,7 +230,7 @@ This software is proprietary and confidential. Unauthorized copying, modificatio
 
 **Ahmed Helal**
 - Email: me@ahmedhelal.dev
-- GitHub: [@helalrules](https://github.com/helalrules)
+- GitHub: [@helalrules7](https://github.com/helalrules7)
 
 ## 📈 Performance
 
@@ -343,7 +343,7 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 ### Build Steps
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/PDFCreator.git
+git clone https://github.com/helalrules7/PDFCreator.git
 cd PDFCreator
 
 # Build debug APK
