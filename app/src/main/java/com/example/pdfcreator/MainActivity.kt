@@ -76,7 +76,7 @@ fun PDFCreatorApp() {
             if (permissionsState.allPermissionsGranted) {
                 @OptIn(ExperimentalMaterial3Api::class)
                 TopAppBar(
-                    title = { Text("🔒 H PDF Creator") },
+                    title = { Text("H PDF Creator") },
                     navigationIcon = {
                         TextButton(onClick = { showDrawer = true }) {
                             Text(
@@ -99,10 +99,12 @@ fun PDFCreatorApp() {
                 context.startActivity(intent)
             },
             onNavigateToAbout = {
-                // TODO: Implement About screen
+                val intent = Intent(context, AboutActivity::class.java)
+                context.startActivity(intent)
             },
             onNavigateToHelp = {
-                // TODO: Implement Help screen
+                val intent = Intent(context, HelpActivity::class.java)
+                context.startActivity(intent)
             }
         )
         

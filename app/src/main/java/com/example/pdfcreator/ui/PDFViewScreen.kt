@@ -60,7 +60,11 @@ fun PDFViewScreen(
                         .size(120.dp)
                         .padding(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.outline
                     )
                 ) {
                     Box(

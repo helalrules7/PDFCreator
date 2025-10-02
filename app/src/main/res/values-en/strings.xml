@@ -16,7 +16,7 @@
     
     <!-- Navigation Drawer -->
     <string name="menu_home">Home</string>
-    <string name="menu_settings">Settings</string>
+    <string name="menu_settings">Language</string>
     <string name="menu_about">About</string>
     <string name="menu_help">Help</string>
     
@@ -31,12 +31,58 @@
     
     <!-- About -->
     <string name="about_title">About</string>
-    <string name="about_description">H PDF Creator - Convert your images to PDF easily</string>
-    <string name="version">Version</string>
+    <string name="app_version">Version 1.0.0</string>
+    <string name="about_description_title">App Description</string>
+    <string name="about_description">H PDF Creator is a simple and easy-to-use app for converting images to PDF files. You can select multiple images and convert them into one high-quality PDF file.</string>
+    <string name="about_features_title">Features</string>
+    <string name="feature_easy_use">Easy to Use</string>
+    <string name="feature_easy_use_desc">Simple and clear interface for easy usage</string>
+    <string name="feature_multiple_images">Multiple Images</string>
+    <string name="feature_multiple_images_desc">Select multiple images and convert them to one PDF</string>
+    <string name="feature_multilingual">Multilingual Support</string>
+    <string name="feature_multilingual_desc">Full support for Arabic and English</string>
+    <string name="feature_custom_titles">Custom Titles</string>
+    <string name="feature_custom_titles_desc">Add custom title to your PDF file</string>
+    <string name="feature_share_print">Share &amp; Print</string>
+    <string name="feature_share_print_desc">Easily share or print your PDF files</string>
+    <string name="about_developer_title">Developer</string>
+    <string name="about_developer_name">Ahmed Helal</string>
+    <string name="about_developer_email">me@ahmedhelal.dev</string>
+    <string name="about_copyright">© 2025 H PDF Creator. All rights reserved.</string>
     
     <!-- Help -->
     <string name="help_title">Help</string>
-    <string name="help_description">How to use the app</string>
+    <string name="help_welcome_title">Welcome to H PDF Creator</string>
+    <string name="help_welcome_desc">Complete guide to using the app easily and effectively</string>
+    
+    <!-- Help Steps -->
+    <string name="help_step1_title">Adding Images</string>
+    <string name="help_step1_desc">Tap the blue button to add images. You can select multiple images at once from your gallery.</string>
+    
+    <string name="help_step2_title">Customizing Title</string>
+    <string name="help_step2_desc">Write a custom title for your PDF file in the top field. This title will appear when opening the file.</string>
+    
+    <string name="help_step3_title">Creating PDF</string>
+    <string name="help_step3_desc">Tap the \"Create PDF\" button to convert images to PDF. Wait for the conversion to complete.</string>
+    
+    <string name="help_step4_title">Sharing &amp; Printing</string>
+    <string name="help_step4_desc">After creating PDF, you can share or print it directly from the app.</string>
+    
+    <!-- Help Tips -->
+    <string name="help_tips_title">Useful Tips</string>
+    <string name="help_tip1">Choose high-quality images for the best result</string>
+    <string name="help_tip2">You can reorder images before creating PDF</string>
+    <string name="help_tip3">Keep backup copies of important PDF files</string>
+    <string name="help_tip4">You can change language from the side menu</string>
+    
+    <!-- Troubleshooting -->
+    <string name="help_troubleshooting_title">Troubleshooting</string>
+    <string name="help_problem1">App cannot access images</string>
+    <string name="help_solution1">Make sure to grant image access permission in app settings</string>
+    <string name="help_problem2">Failed to create PDF</string>
+    <string name="help_solution2">Ensure sufficient storage space and try again</string>
+    <string name="help_problem3">File won\'t open</string>
+    <string name="help_solution3">Make sure you have a PDF reader app installed on your device</string>
     
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>

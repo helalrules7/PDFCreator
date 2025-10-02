@@ -55,6 +55,7 @@ fun ImagePickerScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            .padding(top = 24.dp)
     ) {
         // العنوان الرئيسي
         Text(
@@ -65,18 +66,21 @@ fun ImagePickerScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
         // حقل إدخال عنوان PDF
         OutlinedTextField(
             value = state.pdfTitle,
             onValueChange = { viewModel.updatePDFTitle(it) },
             label = { Text(getString(R.string.pdf_title)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         // زر إضافة الصور
         Card(
@@ -87,7 +91,11 @@ fun ImagePickerScreen(
                     imagePickerLauncher.launch("image/*")
                 },
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.outline
             )
         ) {
             Column(
@@ -105,13 +113,14 @@ fun ImagePickerScreen(
                 Text(
                     text = getString(R.string.add_images),
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = getString(R.string.add_images_subtitle),
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.pdfcreator.MainActivity
 import com.example.pdfcreator.SettingsActivity
+import com.example.pdfcreator.AboutActivity
 import com.example.pdfcreator.R
 
 data class DrawerItem(
@@ -72,11 +73,13 @@ fun NavigationDrawer(
     if (isOpen) {
         AlertDialog(
             onDismissRequest = onClose,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = { 
                 Text(
                     text = "🔒 ${getString(R.string.app_name)}",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
@@ -96,16 +99,20 @@ fun NavigationDrawer(
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
                                 text = item.title,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        HorizontalDivider()
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = onClose) {
-                    Text(getString(R.string.close))
+                    Text(
+                        getString(R.string.close),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         )

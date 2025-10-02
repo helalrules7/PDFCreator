@@ -16,7 +16,7 @@
     
     <!-- Navigation Drawer -->
     <string name="menu_home">الرئيسية</string>
-    <string name="menu_settings">الإعدادات</string>
+    <string name="menu_settings">اللغة</string>
     <string name="menu_about">حول</string>
     <string name="menu_help">المساعدة</string>
     
@@ -31,12 +31,58 @@
     
     <!-- About -->
     <string name="about_title">حول التطبيق</string>
-    <string name="about_description">H PDF Creator - حول صورك إلى PDF بسهولة</string>
-    <string name="version">الإصدار</string>
+    <string name="app_version">الإصدار 1.0.0</string>
+    <string name="about_description_title">وصف التطبيق</string>
+    <string name="about_description">H PDF Creator هو تطبيق بسيط وسهل الاستخدام لتحويل الصور إلى ملفات PDF. يمكنك اختيار عدة صور وتحويلها إلى ملف PDF واحد بجودة عالية.</string>
+    <string name="about_features_title">المميزات</string>
+    <string name="feature_easy_use">سهولة الاستخدام</string>
+    <string name="feature_easy_use_desc">واجهة بسيطة وواضحة للاستخدام السهل</string>
+    <string name="feature_multiple_images">صور متعددة</string>
+    <string name="feature_multiple_images_desc">اختر عدة صور وتحويلها إلى PDF واحد</string>
+    <string name="feature_multilingual">دعم اللغات</string>
+    <string name="feature_multilingual_desc">دعم كامل للعربية والإنجليزية</string>
+    <string name="feature_custom_titles">عناوين مخصصة</string>
+    <string name="feature_custom_titles_desc">أضف عنوان مخصص لملف PDF الخاص بك</string>
+    <string name="feature_share_print">مشاركة وطباعة</string>
+    <string name="feature_share_print_desc">شارك أو اطبع ملف PDF بسهولة</string>
+    <string name="about_developer_title">مطور التطبيق</string>
+    <string name="about_developer_name">Ahmed Helal</string>
+    <string name="about_developer_email">me@ahmedhelal.dev</string>
+    <string name="about_copyright">© ٢٠٢٥ H PDF Creator. جميع الحقوق محفوظة.</string>
     
     <!-- Help -->
     <string name="help_title">المساعدة</string>
-    <string name="help_description">كيفية استخدام التطبيق</string>
+    <string name="help_welcome_title">مرحباً بك في H PDF Creator</string>
+    <string name="help_welcome_desc">دليل شامل لاستخدام التطبيق بسهولة وفعالية</string>
+    
+    <!-- Help Steps -->
+    <string name="help_step1_title">إضافة الصور</string>
+    <string name="help_step1_desc">اضغط على الزر الأزرق لإضافة الصور. يمكنك اختيار عدة صور مرة واحدة من معرض الصور.</string>
+    
+    <string name="help_step2_title">تخصيص العنوان</string>
+    <string name="help_step2_desc">اكتب عنوان مخصص لملف PDF في الحقل العلوي. سيظهر هذا العنوان عند فتح الملف.</string>
+    
+    <string name="help_step3_title">إنشاء PDF</string>
+    <string name="help_step3_desc">اضغط على زر \"إنشاء PDF\" لتحويل الصور إلى ملف PDF. انتظر حتى يكتمل التحويل.</string>
+    
+    <string name="help_step4_title">مشاركة وطباعة</string>
+    <string name="help_step4_desc">بعد إنشاء PDF، يمكنك مشاركته أو طباعته مباشرة من التطبيق.</string>
+    
+    <!-- Help Tips -->
+    <string name="help_tips_title">نصائح مفيدة</string>
+    <string name="help_tip1">اختر صور عالية الجودة للحصول على أفضل نتيجة</string>
+    <string name="help_tip2">يمكنك ترتيب الصور قبل إنشاء PDF</string>
+    <string name="help_tip3">احفظ نسخة احتياطية من ملفات PDF المهمة</string>
+    <string name="help_tip4">يمكنك تغيير اللغة من القائمة الجانبية</string>
+    
+    <!-- Troubleshooting -->
+    <string name="help_troubleshooting_title">حل المشاكل</string>
+    <string name="help_problem1">التطبيق لا يفتح الصور</string>
+    <string name="help_solution1">تأكد من منح صلاحية الوصول للصور في إعدادات التطبيق</string>
+    <string name="help_problem2">فشل في إنشاء PDF</string>
+    <string name="help_solution2">تأكد من وجود مساحة كافية في التخزين وأعد المحاولة</string>
+    <string name="help_problem3">الملف لا يفتح</string>
+    <string name="help_solution3">تأكد من وجود تطبيق قراءة PDF مثبت على الجهاز</string>
     
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>
