@@ -46,14 +46,47 @@ class MainActivity : BaseActivity() {
             }
         }
     }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun PDFCreatorApp() {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? MainActivity
     val viewModel: PDFCreatorViewModel = viewModel()
+    
+    // Get intent from activity
+    val intent = activity?.intent
+    
+    // Check if we should show PDF view from intent
+    val showPdfView = intent?.getBooleanExtra("show_pdf_view", false) ?: false
+    val pdfPath = intent?.getStringExtra("pdf_path")
+    val pdfTitle = intent?.getStringExtra("pdf_title")
+    
+    // Initialize view model state if coming from EditPDFActivity
+    // Use pdfPath as key to trigger recomposition when it changes
+    LaunchedEffect(pdfPath) {
+        if (showPdfView && pdfPath != null && pdfTitle != null) {
+            android.util.Log.d("PDFCreator", "Updating PDF: path=$pdfPath, title=$pdfTitle")
+            viewModel.updatePDFCreated(pdfPath, pdfTitle)
+        }
+    }
+    
     var showPDFScreen by remember { mutableStateOf(false) }
+    
+    // Update showPDFScreen when intent changes
+    LaunchedEffect(showPdfView, pdfPath) {
+        if (showPdfView && pdfPath != null) {
+            android.util.Log.d("PDFCreator", "Showing PDF screen")
+            showPDFScreen = true
+        }
+    }
+    
     var showDrawer by remember { mutableStateOf(false) }
     
 

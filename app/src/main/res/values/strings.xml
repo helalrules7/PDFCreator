@@ -84,6 +84,22 @@
     <string name="help_problem3">الملف لا يفتح</string>
     <string name="help_solution3">تأكد من وجود تطبيق قراءة PDF مثبت على الجهاز</string>
     
+    <!-- Edit PDF -->
+    <string name="edit_pdf_title">تعديل PDF</string>
+    <string name="edit_pdf">تعديل PDF</string>
+    <string name="loading_pdf_pages">جاري تحميل صفحات PDF...</string>
+    <string name="error_loading_pdf">خطأ في تحميل صفحات PDF</string>
+    <string name="page_number">الصفحة %d</string>
+    <string name="rotated">مُدور %d°</string>
+    <string name="move_up">نقل لأعلى</string>
+    <string name="move_down">نقل لأسفل</string>
+    <string name="rotate_page">تدوير الصفحة</string>
+    <string name="save_pdf">حفظ PDF</string>
+    <string name="save_pdf_title">حفظ PDF المعدل</string>
+    <string name="enter_new_title">أدخل عنوان جديد لملف PDF</string>
+    <string name="save">حفظ</string>
+    <string name="cancel">إلغاء</string>
+    
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>
     <string name="permission_required_message">هذا التطبيق يحتاج صلاحية الوصول للصور لتحويلها إلى PDF\n\nاضغط على الزر أدناه لمنح الصلاحيات</string>

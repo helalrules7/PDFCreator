@@ -29,6 +29,11 @@ fun PDFViewScreen(
 ) {
     val context = LocalContext.current
     val state = viewModel.state
+    
+    // Log the current state
+    LaunchedEffect(state.pdfPath, state.pdfTitle) {
+        android.util.Log.d("PDFViewScreen", "Current state: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
+    }
 
     Scaffold(
         topBar = {
@@ -129,6 +134,23 @@ fun PDFViewScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(getString(R.string.open_pdf))
+                    }
+
+                    // Edit PDF Button
+                    Button(
+                        onClick = {
+                            val intent = Intent(context, com.example.pdfcreator.EditPDFActivity::class.java).apply {
+                                putExtra("pdf_path", state.pdfPath)
+                                putExtra("pdf_title", state.pdfTitle)
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
+                    ) {
+                        Text("✏️ ${getString(R.string.edit_pdf)}")
                     }
 
                     OutlinedButton(

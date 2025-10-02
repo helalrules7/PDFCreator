@@ -160,4 +160,16 @@ class PDFCreatorViewModel : ViewModel() {
     fun clearError() {
         state = state.copy(errorMessage = null)
     }
+    
+    fun updatePDFCreated(pdfPath: String, pdfTitle: String) {
+        android.util.Log.d("PDFCreatorViewModel", "Updating PDF state: path=$pdfPath, title=$pdfTitle")
+        state = state.copy(
+            pdfCreated = true,
+            pdfPath = pdfPath,
+            pdfTitle = pdfTitle,
+            isCreatingPDF = false,
+            errorMessage = null
+        )
+        android.util.Log.d("PDFCreatorViewModel", "State updated: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
+    }
 }

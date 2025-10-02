@@ -25,7 +25,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.PDFCreator">
+            android:theme="@style/Theme.PDFCreator"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -51,6 +52,13 @@
             android:name=".HelpActivity"
             android:exported="false"
             android:label="@string/help_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".MainActivity" />
+        
+        <activity
+            android:name=".EditPDFActivity"
+            android:exported="false"
+            android:label="@string/edit_pdf_title"
             android:theme="@style/Theme.PDFCreator"
             android:parentActivityName=".MainActivity" />
         

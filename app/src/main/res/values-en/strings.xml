@@ -84,6 +84,22 @@
     <string name="help_problem3">File won\'t open</string>
     <string name="help_solution3">Make sure you have a PDF reader app installed on your device</string>
     
+    <!-- Edit PDF -->
+    <string name="edit_pdf_title">Edit PDF</string>
+    <string name="edit_pdf">Edit PDF</string>
+    <string name="loading_pdf_pages">Loading PDF pages...</string>
+    <string name="error_loading_pdf">Error loading PDF pages</string>
+    <string name="page_number">Page %d</string>
+    <string name="rotated">Rotated %d°</string>
+    <string name="move_up">Move Up</string>
+    <string name="move_down">Move Down</string>
+    <string name="rotate_page">Rotate Page</string>
+    <string name="save_pdf">Save PDF</string>
+    <string name="save_pdf_title">Save Edited PDF</string>
+    <string name="enter_new_title">Enter new title for PDF file</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>
     <string name="permission_required_message">This app needs permission to access images to convert them to PDF\n\nTap the button below to grant permissions</string>
