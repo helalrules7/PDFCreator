@@ -86,12 +86,26 @@ fun PDFViewScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = getString(R.string.pdf_created_successfully),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
+                // عرض الرسالة المناسبة حسب نوع الملف
+                if (state.isNewPDF) {
+                    // ملف جديد - عرض رسالة النجاح
+                    Text(
+                        text = getString(R.string.pdf_created_successfully),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    // ملف موجود - عرض اسم الملف
+                    val fileName = state.pdfPath?.substringAfterLast("/") ?: state.pdfTitle
+                    Text(
+                        text = fileName,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 

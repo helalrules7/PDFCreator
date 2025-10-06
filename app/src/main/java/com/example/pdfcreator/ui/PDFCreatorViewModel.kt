@@ -25,7 +25,8 @@ data class PDFCreatorState(
     val pdfCreated: Boolean = false,
     val errorMessage: String? = null,
     val pdfPath: String? = null,
-    val pdfTitle: String = "PDF_${System.currentTimeMillis()}"
+    val pdfTitle: String = "PDF_${System.currentTimeMillis()}",
+    val isNewPDF: Boolean = false  // true = ملف جديد، false = ملف موجود
 )
 
 class PDFCreatorViewModel : ViewModel() {
@@ -49,7 +50,8 @@ class PDFCreatorViewModel : ViewModel() {
         state = state.copy(
             selectedImages = emptyList(),
             pdfCreated = false,
-            pdfPath = null
+            pdfPath = null,
+            isNewPDF = false
         )
     }
 
@@ -82,7 +84,8 @@ class PDFCreatorViewModel : ViewModel() {
                 state = state.copy(
                     isCreatingPDF = false,
                     pdfCreated = true,
-                    pdfPath = pdfPath
+                    pdfPath = pdfPath,
+                    isNewPDF = true  // هذا ملف جديد تم إنشاؤه
                 )
             } catch (e: Exception) {
                 e.printStackTrace() // إضافة log للخطأ
@@ -168,7 +171,8 @@ class PDFCreatorViewModel : ViewModel() {
             pdfPath = pdfPath,
             pdfTitle = pdfTitle,
             isCreatingPDF = false,
-            errorMessage = null
+            errorMessage = null,
+            isNewPDF = false  // هذا ملف موجود يتم عرضه
         )
         android.util.Log.d("PDFCreatorViewModel", "State updated: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
     }

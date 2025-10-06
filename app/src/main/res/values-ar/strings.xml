@@ -25,12 +25,12 @@
     
     <!-- Navigation Drawer -->
     <string name="menu_home">الرئيسية</string>
-    <string name="menu_settings">الإعدادات</string>
+    <string name="menu_settings">لغة التطبيق</string>
     <string name="menu_about">حول</string>
     <string name="menu_help">المساعدة</string>
     
     <!-- Settings -->
-    <string name="settings_title">الإعدادات</string>
+    <string name="settings_title">لغة التطبيق</string>
     <string name="language_settings">إعدادات اللغة</string>
     <string name="select_language">اختر اللغة</string>
     <string name="language_arabic">العربية</string>

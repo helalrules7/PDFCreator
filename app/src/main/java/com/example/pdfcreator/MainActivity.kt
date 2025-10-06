@@ -87,13 +87,10 @@ fun PDFCreatorApp() {
     
     var showDrawer by remember { mutableStateOf(false) }
     
-    // تحديد الصلاحيات المطلوبة بناءً على إصدار الأندرويد
     val permissions = remember {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            // أندرويد 13 وما فوق (API 33+)
             listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
         } else {
-            // أندرويد 12 وما دون (API 24-32)
             listOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
         }
     }
@@ -133,6 +130,12 @@ fun PDFCreatorApp() {
         NavigationDrawer(
             isOpen = showDrawer,
             onClose = { showDrawer = false },
+            onNavigateToHome = {
+                // إعادة تعيين الشاشة لإنشاء PDF جديد
+                showPDFScreen = false
+                // مسح جميع الصور المحددة
+                viewModel.clearImages()
+            },
             onNavigateToMyPDFs = {
                 val intent = Intent(context, MyPDFsActivity::class.java)
                 context.startActivity(intent)

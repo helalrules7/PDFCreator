@@ -31,6 +31,7 @@ data class DrawerItem(
 fun NavigationDrawer(
     isOpen: Boolean,
     onClose: () -> Unit,
+    onNavigateToHome: () -> Unit = {},
     onNavigateToMyPDFs: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -43,7 +44,10 @@ fun NavigationDrawer(
         DrawerItem(
             title = getString(R.string.menu_home),
             emoji = "🏠",
-            action = { onClose() }
+            action = { 
+                onClose()
+                onNavigateToHome()
+            }
         ),
         DrawerItem(
             title = getString(R.string.menu_my_pdfs),

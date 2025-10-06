@@ -7,11 +7,12 @@ import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -27,25 +28,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pdfcreator.ui.theme.PDFCreatorTheme
 import com.example.pdfcreator.utils.LanguageAwareComposable
-import com.itextpdf.io.image.ImageDataFactory
-import com.itextpdf.kernel.geom.PageSize
 import com.itextpdf.kernel.pdf.PdfDocument
+import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter
-import com.itextpdf.layout.Document
-import com.itextpdf.layout.element.Image as ITextImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
+/**
+ * ==========================================
+ * محرر PDF - Activity الرئيسية
+ * ==========================================
+ * هذا الـ Activity مسؤول عن تحرير ملفات PDF
+ * يسمح بإعادة ترتيب الصفحات وتدويرها
+ * مع حفظ تلقائي وحفظ يدوي
+ */
 class EditPDFActivity : BaseActivity() {
     
     private var pdfPath: String? = null
@@ -55,6 +65,7 @@ class EditPDFActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // استقبال بيانات PDF من Intent
         pdfPath = intent.getStringExtra("pdf_path")
         pdfTitle = intent.getStringExtra("pdf_title")
         
@@ -64,14 +75,7 @@ class EditPDFActivity : BaseActivity() {
                     EditPDFScreen(
                         pdfPath = pdfPath ?: "",
                         pdfTitle = pdfTitle ?: "PDF",
-                        onBackPressed = { finish() },
-                        onSaveSuccess = { newPath ->
-                            val intent = Intent(this, MainActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            }
-                            startActivity(intent)
-                            finish()
-                        }
+                        onBackPressed = { finish() }
                     )
                 }
             }
@@ -79,55 +83,94 @@ class EditPDFActivity : BaseActivity() {
     }
 }
 
+/**
+ * ==========================================
+ * بيانات صفحة PDF
+ * ==========================================
+ * Data class تحتوي على معلومات كل صفحة
+ */
 data class PDFPageData(
-    val pageNumber: Int,
-    val bitmap: Bitmap?,
-    val rotation: Int = 0
+    val pageNumber: Int,          // رقم الصفحة الأصلي
+    val bitmap: Bitmap?,          // صورة معاينة الصفحة
+    val originalRotation: Int = 0,// التدوير الأصلي في الملف
+    val rotation: Int = 0,        // درجة التدوير الحالية (0, 90, 180, 270)
+    val isDragging: Boolean = false  // هل يتم سحب الصفحة حالياً
 )
 
+/**
+ * ==========================================
+ * شاشة تحرير PDF
+ * ==========================================
+ * الشاشة الرئيسية لتحرير ملف PDF
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditPDFScreen(
     pdfPath: String,
     pdfTitle: String,
-    onBackPressed: () -> Unit,
-    onSaveSuccess: (String) -> Unit
+    onBackPressed: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
+    // ==================== الحالات (States) ====================
     var pages by remember { mutableStateOf<List<PDFPageData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
-    var showSaveDialog by remember { mutableStateOf(false) }
-    var newTitle by remember { mutableStateOf(pdfTitle) }
+    var isAutoSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var hasUnsavedChanges by remember { mutableStateOf(false) }
+    var lastModificationTime by remember { mutableStateOf(0L) }
+    var needsReload by remember { mutableStateOf(false) }
+    var reloadTrigger by remember { mutableStateOf(0) }
     
-    fun getString(@androidx.annotation.StringRes id: Int): String {
-        return context.getString(id)
-    }
-    
-    // Load PDF pages
+    // ==================== تحميل صفحات PDF ====================
     LaunchedEffect(pdfPath) {
         if (pdfPath.isNotEmpty()) {
-            scope.launch {
-                try {
-                    val loadedPages = loadPDFPages(context, pdfPath)
-                    pages = loadedPages
-                    isLoading = false
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    errorMessage = e.message
-                    isLoading = false
-                }
+            try {
+                val loadedPages = loadPDFPages(context, pdfPath)
+                pages = loadedPages
+                isLoading = false
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = e.message
+                isLoading = false
             }
         }
     }
     
+    // ==================== إعادة تحميل الصفحات بعد الحفظ ====================
+    LaunchedEffect(reloadTrigger) {
+        if (reloadTrigger > 0 && needsReload) {
+            try {
+                android.util.Log.d("EditPDF", "🔄 إعادة تحميل الصفحات...")
+                val reloadedPages = loadPDFPages(context, pdfPath)
+                pages = reloadedPages
+                android.util.Log.d("EditPDF", "✅ تم إعادة تحميل ${reloadedPages.size} صفحة")
+                needsReload = false
+            } catch (e: Exception) {
+                android.util.Log.e("EditPDF", "❌ فشل إعادة التحميل: ${e.message}")
+                e.printStackTrace()
+                needsReload = false
+            }
+        }
+    }
+    
+    // ==================== الحفظ التلقائي ====================
+    // تم تعطيل الحفظ التلقائي - الحفظ يتم يدوياً فقط
+    
+    // ==================== دالة مساعدة للحصول على النصوص ====================
+    fun getString(@androidx.annotation.StringRes id: Int): String {
+        return context.getString(id)
+    }
+    
+    // ==================== التصميم الرئيسي ====================
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(getString(R.string.edit_pdf_title)) },
+                title = { 
+                    Text(getString(R.string.edit_pdf_title))
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(
@@ -137,10 +180,58 @@ fun EditPDFScreen(
                     }
                 },
                 actions = {
+                    // زر الحفظ اليدوي
                     if (!isLoading && pages.isNotEmpty()) {
                         IconButton(
-                            onClick = { showSaveDialog = true },
-                            enabled = !isSaving
+                            onClick = {
+                                android.util.Log.d("EditPDF", "🔘 تم الضغط على زر الحفظ اليدوي")
+                                isSaving = true
+                                scope.launch {
+                                    try {
+                                        android.util.Log.d("EditPDF", "💾 بدء الحفظ اليدوي...")
+                                        savePDFToOriginalPath(context, pdfPath, pages)
+                                        hasUnsavedChanges = false
+                                        android.util.Log.d("EditPDF", "✅ تم الحفظ اليدوي بنجاح")
+                                        
+                                        isSaving = false
+                                        
+                                        // عرض رسالة Toast
+                                        val fileName = pdfPath.substringAfterLast("/")
+                                        withContext(Dispatchers.Main) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "تم حفظ الملف $fileName بنجاح",
+                                                android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        
+                                        // الانتقال إلى الشاشة الرئيسية
+                                        delay(500) // انتظار قصير لعرض Toast
+                                        withContext(Dispatchers.Main) {
+                                            val intent = Intent(context, MainActivity::class.java).apply {
+                                                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                            }
+                                            context.startActivity(intent)
+                                            (context as? android.app.Activity)?.finish()
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("EditPDF", "❌ فشل الحفظ اليدوي: ${e.message}")
+                                        e.printStackTrace()
+                                        
+                                        withContext(Dispatchers.Main) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "فشل في حفظ الملف: ${e.message}",
+                                                android.widget.Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                        
+                                        errorMessage = e.message
+                                        isSaving = false
+                                    }
+                                }
+                            },
+                            enabled = !isSaving && !needsReload
                         ) {
                             if (isSaving) {
                                 CircularProgressIndicator(
@@ -150,7 +241,11 @@ fun EditPDFScreen(
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = getString(R.string.save_pdf)
+                                    contentDescription = getString(R.string.save_pdf),
+                                    tint = if (hasUnsavedChanges) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -165,173 +260,265 @@ fun EditPDFScreen(
                 .padding(paddingValues)
         ) {
             when {
+                // ==================== حالة التحميل ====================
                 isLoading -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = getString(R.string.loading_pdf_pages),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    LoadingView()
                 }
+                // ==================== حالة الخطأ ====================
                 errorMessage != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "❌",
-                            fontSize = 48.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = getString(R.string.error_loading_pdf),
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        if (errorMessage != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = errorMessage!!,
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    ErrorView(errorMessage = errorMessage)
                 }
+                // ==================== حالة فارغة ====================
                 pages.isEmpty() -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "📄",
-                            fontSize = 48.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = getString(R.string.error_loading_pdf),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    EmptyView()
                 }
+                // ==================== عرض الصفحات ====================
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        itemsIndexed(
-                            items = pages,
-                            key = { _, page -> page.pageNumber }
-                        ) { index, page ->
-                            PDFPageItem(
-                                page = page,
-                                index = index,
-                                totalPages = pages.size,
-                                onRotate = {
-                                    pages = pages.toMutableList().apply {
-                                        val oldRotation = this[index].rotation
-                                        val newRotation = (oldRotation + 90) % 360
-                                        android.util.Log.d("EditPDF", "Rotating page $index: $oldRotation -> $newRotation")
-                                        this[index] = this[index].copy(
-                                            rotation = newRotation
-                                        )
-                                    }
-                                },
-                                onMoveUp = {
-                                    if (index > 0) {
-                                        pages = pages.toMutableList().apply {
-                                            val temp = this[index]
-                                            this[index] = this[index - 1]
-                                            this[index - 1] = temp
-                                        }
-                                    }
-                                },
-                                onMoveDown = {
-                                    if (index < pages.size - 1) {
-                                        pages = pages.toMutableList().apply {
-                                            val temp = this[index]
-                                            this[index] = this[index + 1]
-                                            this[index + 1] = temp
-                                        }
-                                    }
-                                }
-                            )
+                    PDFPagesListView(
+                        pages = pages,
+                        onPagesChanged = { newPages ->
+                            pages = newPages
+                            hasUnsavedChanges = true
+                            lastModificationTime = System.currentTimeMillis()
                         }
-                    }
+                    )
                 }
             }
         }
     }
+}
+
+/**
+ * ==========================================
+ * عرض قائمة صفحات PDF
+ * ==========================================
+ * يعرض جميع صفحات PDF مع إمكانية التحرير
+ */
+@Composable
+private fun PDFPagesListView(
+    pages: List<PDFPageData>,
+    onPagesChanged: (List<PDFPageData>) -> Unit
+) {
+    var draggedIndex by remember { mutableStateOf<Int?>(null) }
     
-    // Save Dialog
-    if (showSaveDialog) {
-        AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            title = { Text(getString(R.string.save_pdf_title)) },
-            text = {
-                Column {
-                    Text(getString(R.string.enter_new_title))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = newTitle,
-                        onValueChange = { newTitle = it },
-                        label = { Text(getString(R.string.pdf_title)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSaveDialog = false
-                        isSaving = true
-                        scope.launch {
-                            try {
-                                val newPath = saveEditedPDF(context, pages, newTitle)
-                                isSaving = false
-                                
-                                // Navigate to MainActivity with the new PDF
-                                val intent = Intent(context, com.example.pdfcreator.MainActivity::class.java).apply {
-                                    putExtra("show_pdf_view", true)
-                                    putExtra("pdf_path", newPath)
-                                    putExtra("pdf_title", newTitle)
-                                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                }
-                                context.startActivity(intent)
-                                // Close this activity to go back to MainActivity
-                                (context as? android.app.Activity)?.finish()
-                                onSaveSuccess(newPath)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                errorMessage = e.message
-                                isSaving = false
-                            }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        itemsIndexed(
+            items = pages,
+            key = { _, page -> page.pageNumber }
+        ) { index, page ->
+            PDFPageItemCard(
+                page = page,
+                index = index,
+                totalPages = pages.size,
+                isDragging = draggedIndex == index,
+                onRotate = {
+                    // تدوير الصفحة بمقدار 90 درجة
+                    android.util.Log.d("EditPDF", "🔄 تدوير الصفحة في الموضع $index")
+                    val newPages = pages.toMutableList()
+                    val oldRotation = newPages[index].rotation
+                    val newRotation = (oldRotation + 90) % 360
+                    android.util.Log.d("EditPDF", "   الصفحة رقم ${newPages[index].pageNumber}: $oldRotation° → $newRotation°")
+                    newPages[index] = newPages[index].copy(rotation = newRotation)
+                    android.util.Log.d("EditPDF", "   الترتيب الجديد:")
+                    newPages.forEachIndexed { i, p -> 
+                        android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
+                    }
+                    onPagesChanged(newPages)
+                },
+                onMoveUp = {
+                    // نقل الصفحة للأعلى
+                    if (index > 0) {
+                        android.util.Log.d("EditPDF", "⬆️ نقل الصفحة من الموضع $index إلى ${index - 1}")
+                        val newPages = pages.toMutableList()
+                        val temp = newPages[index]
+                        newPages[index] = newPages[index - 1]
+                        newPages[index - 1] = temp
+                        android.util.Log.d("EditPDF", "   الترتيب الجديد:")
+                        newPages.forEachIndexed { i, p -> 
+                            android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
                         }
-                    },
-                    enabled = newTitle.isNotEmpty()
-                ) {
-                    Text(getString(R.string.save))
+                        onPagesChanged(newPages)
+                    }
+                },
+                onMoveDown = {
+                    // نقل الصفحة للأسفل
+                    if (index < pages.size - 1) {
+                        android.util.Log.d("EditPDF", "⬇️ نقل الصفحة من الموضع $index إلى ${index + 1}")
+                        val newPages = pages.toMutableList()
+                        val temp = newPages[index]
+                        newPages[index] = newPages[index + 1]
+                        newPages[index + 1] = temp
+                        android.util.Log.d("EditPDF", "   الترتيب الجديد:")
+                        newPages.forEachIndexed { i, p -> 
+                            android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
+                        }
+                        onPagesChanged(newPages)
+                    }
+                },
+                onDragStart = {
+                    draggedIndex = index
+                },
+                onDragEnd = {
+                    draggedIndex = null
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSaveDialog = false }) {
-                    Text(getString(R.string.cancel))
-                }
-            }
-        )
+            )
+        }
     }
 }
 
+/**
+ * ==========================================
+ * بطاقة صفحة PDF
+ * ==========================================
+ * تعرض معاينة الصفحة مع أزرار التحكم
+ */
 @Composable
-private fun PDFPageItem(
+private fun PDFPageItemCard(
     page: PDFPageData,
+    index: Int,
+    totalPages: Int,
+    isDragging: Boolean,
+    onRotate: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onDragStart: () -> Unit,
+    onDragEnd: () -> Unit
+) {
+    val context = LocalContext.current
+    val elevation by animateDpAsState(if (isDragging) 8.dp else 2.dp)
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation)
+            .pointerInput(Unit) {
+                // إضافة إمكانية السحب بالضغط المطول
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { onDragStart() },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() },
+                    onDrag = { _, _ -> }
+                )
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDragging)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // ==================== معاينة الصفحة ====================
+            PagePreview(page = page)
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // ==================== معلومات الصفحة ====================
+            PageInfo(
+                page = page,
+                modifier = Modifier.weight(1f)
+            )
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            // ==================== أزرار التحكم ====================
+            ControlButtons(
+                index = index,
+                totalPages = totalPages,
+                onRotate = onRotate,
+                onMoveUp = onMoveUp,
+                onMoveDown = onMoveDown
+            )
+        }
+    }
+}
+
+/**
+ * ==========================================
+ * معاينة الصفحة
+ * ==========================================
+ */
+@Composable
+private fun PagePreview(page: PDFPageData) {
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
+        contentAlignment = Alignment.Center
+    ) {
+        if (page.bitmap != null) {
+            // حساب التدوير الإضافي فقط (الفرق بين التدوير الحالي والأصلي)
+            val additionalRotation = (page.rotation - page.originalRotation + 360) % 360
+            val rotatedBitmap = remember(page.bitmap, additionalRotation) {
+                if (additionalRotation == 0) {
+                    page.bitmap
+                } else {
+                    rotateBitmap(page.bitmap, additionalRotation.toFloat())
+                }
+            }
+            Image(
+                bitmap = rotatedBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                text = "📄",
+                fontSize = 32.sp
+            )
+        }
+    }
+}
+
+/**
+ * ==========================================
+ * معلومات الصفحة
+ * ==========================================
+ */
+@Composable
+private fun PageInfo(
+    page: PDFPageData,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    
+    Column(modifier = modifier) {
+        Text(
+            text = context.getString(R.string.page_number, page.pageNumber),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        if (page.rotation != 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = context.getString(R.string.rotated, page.rotation),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+/**
+ * ==========================================
+ * أزرار التحكم
+ * ==========================================
+ */
+@Composable
+private fun ControlButtons(
     index: Int,
     totalPages: Int,
     onRotate: () -> Unit,
@@ -340,149 +527,223 @@ private fun PDFPageItem(
 ) {
     val context = LocalContext.current
     
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // زر تحريك للأعلى
+        IconButton(
+            onClick = onMoveUp,
+            enabled = index > 0
         ) {
-            // Page preview
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                if (page.bitmap != null) {
-                    val rotatedBitmap = remember(page.bitmap, page.rotation) {
-                        rotateBitmap(page.bitmap, page.rotation.toFloat())
-                    }
-                    Image(
-                        bitmap = rotatedBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Text(
-                        text = "📄",
-                        fontSize = 24.sp
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Page info
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = context.getString(R.string.page_number, page.pageNumber),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                
-                if (page.rotation != 0) {
-                    Text(
-                        text = context.getString(R.string.rotated, page.rotation),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            // Action buttons
-            Column {
-                Row {
-                    IconButton(
-                        onClick = onMoveUp,
-                        enabled = index > 0
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
-                            contentDescription = context.getString(R.string.move_up)
-                        )
-                    }
-                    
-                    IconButton(onClick = onRotate) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = context.getString(R.string.rotate_page)
-                        )
-                    }
-                }
-                
-                IconButton(
-                    onClick = onMoveDown,
-                    enabled = index < totalPages - 1
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = context.getString(R.string.move_down)
-                    )
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowUp,
+                contentDescription = context.getString(R.string.move_up),
+                tint = if (index > 0) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+            )
+        }
+        
+        // زر التدوير
+        FilledTonalIconButton(onClick = onRotate) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = context.getString(R.string.rotate_page)
+            )
+        }
+        
+        // زر تحريك للأسفل
+        IconButton(
+            onClick = onMoveDown,
+            enabled = index < totalPages - 1
+        ) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = context.getString(R.string.move_down),
+                tint = if (index < totalPages - 1) 
+                    MaterialTheme.colorScheme.primary 
+                else 
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+            )
         }
     }
 }
 
-// Helper functions
-private suspend fun loadPDFPages(context: Context, pdfPath: String): List<PDFPageData> = withContext(Dispatchers.IO) {
+/**
+ * ==========================================
+ * عرض حالة التحميل
+ * ==========================================
+ */
+@Composable
+private fun LoadingView() {
+    val context = LocalContext.current
+    
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = context.getString(R.string.loading_pdf_pages),
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * ==========================================
+ * عرض حالة الخطأ
+ * ==========================================
+ */
+@Composable
+private fun ErrorView(errorMessage: String?) {
+    val context = LocalContext.current
+    
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "❌",
+            fontSize = 64.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = context.getString(R.string.error_loading_pdf),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.error
+        )
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = errorMessage,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * ==========================================
+ * عرض حالة فارغة
+ * ==========================================
+ */
+@Composable
+private fun EmptyView() {
+    val context = LocalContext.current
+    
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "📄",
+            fontSize = 64.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = context.getString(R.string.error_loading_pdf),
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ==========================================
+// دوال مساعدة - Helper Functions
+// ==========================================
+
+/**
+ * تحميل صفحات PDF من الملف
+ * @param context السياق
+ * @param pdfPath مسار ملف PDF
+ * @return قائمة بصفحات PDF
+ */
+private suspend fun loadPDFPages(
+    context: Context, 
+    pdfPath: String
+): List<PDFPageData> = withContext(Dispatchers.IO) {
+    android.util.Log.d("EditPDF", "===== بدء تحميل صفحات PDF =====")
+    android.util.Log.d("EditPDF", "المسار: $pdfPath")
+    
     val pages = mutableListOf<PDFPageData>()
     val file = File(pdfPath)
     
     try {
-        // First, read rotations from PDF using iTextPDF
-        val pdfReader = com.itextpdf.kernel.pdf.PdfReader(file)
-        val pdfDoc = com.itextpdf.kernel.pdf.PdfDocument(pdfReader)
+        // قراءة دوران الصفحات من PDF باستخدام iTextPDF
+        val pdfReader = PdfReader(file)
+        val pdfDoc = PdfDocument(pdfReader)
         val rotations = mutableListOf<Int>()
+        
+        android.util.Log.d("EditPDF", "عدد الصفحات في PDF: ${pdfDoc.numberOfPages}")
         
         for (i in 1..pdfDoc.numberOfPages) {
             val page = pdfDoc.getPage(i)
-            rotations.add(page.rotation)
+            val rotation = page.rotation
+            rotations.add(rotation)
+            android.util.Log.d("EditPDF", "الصفحة $i - دوران موجود: $rotation°")
         }
         
         pdfDoc.close()
         pdfReader.close()
         
-        // Then, render pages using PdfRenderer
-        val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        // عرض الصفحات باستخدام PdfRenderer
+        val fileDescriptor = ParcelFileDescriptor.open(
+            file, 
+            ParcelFileDescriptor.MODE_READ_ONLY
+        )
         val pdfRenderer = PdfRenderer(fileDescriptor)
+        
+        android.util.Log.d("EditPDF", "بدء عرض الصفحات...")
         
         for (i in 0 until pdfRenderer.pageCount) {
             val page = pdfRenderer.openPage(i)
             
-            // Create bitmap for preview
+            // إنشاء صورة معاينة للصفحة
             val bitmap = Bitmap.createBitmap(
-                page.width / 2,  // Reduced size for preview
+                page.width / 2,  // حجم أصغر للمعاينة
                 page.height / 2,
                 Bitmap.Config.ARGB_8888
             )
             
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            page.render(
+                bitmap, 
+                null, 
+                null, 
+                PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY
+            )
+            
+            val pageNumber = i + 1
+            val pageRotation = rotations[i]
             
             pages.add(
                 PDFPageData(
-                    pageNumber = i + 1,
+                    pageNumber = pageNumber,
                     bitmap = bitmap,
-                    rotation = rotations[i]  // Use rotation from PDF
+                    originalRotation = pageRotation,
+                    rotation = pageRotation
                 )
             )
+            
+            android.util.Log.d("EditPDF", "تم تحميل الصفحة: رقم=$pageNumber, دوران=$pageRotation°")
             
             page.close()
         }
         
         pdfRenderer.close()
         fileDescriptor.close()
+        
+        android.util.Log.d("EditPDF", "===== تم تحميل ${pages.size} صفحة بنجاح =====")
     } catch (e: Exception) {
+        android.util.Log.e("EditPDF", "❌ خطأ في تحميل الصفحات: ${e.message}")
         e.printStackTrace()
         throw e
     }
@@ -490,96 +751,165 @@ private suspend fun loadPDFPages(context: Context, pdfPath: String): List<PDFPag
     pages
 }
 
+/**
+ * تدوير صورة bitmap
+ * @param bitmap الصورة الأصلية
+ * @param degrees درجة التدوير
+ * @return الصورة المدورة
+ */
 private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
     if (degrees == 0f) return bitmap
     
     val matrix = Matrix()
     matrix.postRotate(degrees)
     
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    return Bitmap.createBitmap(
+        bitmap, 
+        0, 
+        0, 
+        bitmap.width, 
+        bitmap.height, 
+        matrix, 
+        true
+    )
 }
 
-private suspend fun saveEditedPDF(
+/**
+ * حفظ PDF تلقائياً في نفس المسار
+ * @param context السياق
+ * @param originalPath المسار الأصلي للملف
+ * @param pages قائمة الصفحات المعدلة
+ */
+private suspend fun autoSavePDF(
     context: Context,
-    pages: List<PDFPageData>,
-    title: String
-): String = withContext(Dispatchers.IO) {
-    // Save in the same directory as the original PDF (root external files dir)
-    val fileName = "${context.getString(R.string.app_name)} - ${title}.pdf"
-    val file = File(context.getExternalFilesDir(null), fileName)
-    val outputPath = file.absolutePath
+    originalPath: String,
+    pages: List<PDFPageData>
+) = withContext(Dispatchers.IO) {
+    savePDFToOriginalPath(context, originalPath, pages)
+}
+
+/**
+ * حفظ PDF في نفس المسار الأصلي (Overwrite)
+ * @param context السياق
+ * @param originalPath المسار الأصلي للملف
+ * @param pages قائمة الصفحات المعدلة
+ */
+private suspend fun savePDFToOriginalPath(
+    context: Context,
+    originalPath: String,
+    pages: List<PDFPageData>
+) = withContext(Dispatchers.IO) {
+    val originalFile = File(originalPath)
+    val tempFile = File(originalFile.parent, "${originalFile.name}.tmp")
+    
+    android.util.Log.d("EditPDF", "===== بدء عملية الحفظ =====")
+    android.util.Log.d("EditPDF", "المسار الأصلي: $originalPath")
+    android.util.Log.d("EditPDF", "عدد الصفحات: ${pages.size}")
+    pages.forEachIndexed { index, page ->
+        android.util.Log.d("EditPDF", "الصفحة $index: رقم=${page.pageNumber}, دوران=${page.rotation}°")
+    }
     
     try {
-        val writer = PdfWriter(outputPath)
-        val pdfDocument = PdfDocument(writer)
-        val document = Document(pdfDocument)
+        // الخطوة 1: إنشاء PDF مؤقت جديد مع التعديلات
+        android.util.Log.d("EditPDF", "الخطوة 1: إنشاء ملف مؤقت...")
+        createModifiedPDF(originalPath, tempFile.absolutePath, pages)
         
-        pages.forEachIndexed { index, page ->
-            // Use original bitmap without rotating it
-            val bitmap = page.bitmap!!
-            
-            // Convert bitmap to byte array using PNG (lossless, no borders)
-            val stream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            val byteArray = stream.toByteArray()
-            
-            // Create image data
-            val imageData = ImageDataFactory.create(byteArray)
-            val pdfImage = ITextImage(imageData)
-            
-            // Remove ALL borders and strokes from image
-            pdfImage.setBorder(com.itextpdf.layout.borders.Border.NO_BORDER)
-            pdfImage.setBorderTop(com.itextpdf.layout.borders.Border.NO_BORDER)
-            pdfImage.setBorderBottom(com.itextpdf.layout.borders.Border.NO_BORDER)
-            pdfImage.setBorderLeft(com.itextpdf.layout.borders.Border.NO_BORDER)
-            pdfImage.setBorderRight(com.itextpdf.layout.borders.Border.NO_BORDER)
-            
-            // تحسين حجم الصورة لتناسب الصفحة (same as original)
-            val pageSize = pdfDocument.defaultPageSize
-            val imageWidth = pdfImage.imageWidth
-            val imageHeight = pdfImage.imageHeight
-            val pageWidth = pageSize.width - 40 // هامش 20 من كل جانب
-            val pageHeight = pageSize.height - 40
-            
-            val aspectRatio = imageWidth.toFloat() / imageHeight.toFloat()
-            val pageAspectRatio = pageWidth / pageHeight
-            
-            val finalWidth: Float
-            val finalHeight: Float
-            
-            if (aspectRatio > pageAspectRatio) {
-                finalWidth = pageWidth
-                finalHeight = pageWidth / aspectRatio
-            } else {
-                finalHeight = pageHeight
-                finalWidth = pageHeight * aspectRatio
-            }
-            
-            pdfImage.scaleToFit(finalWidth, finalHeight)
-            pdfImage.setFixedPosition(20f, pageSize.height - finalHeight - 20f)
-            
-            document.add(pdfImage)
-            
-            // Add page break after image (except last one)
-            if (index < pages.size - 1) {
-                document.add(com.itextpdf.layout.element.AreaBreak())
-            }
-            
-            // Apply rotation to the current page AFTER adding content
-            if (page.rotation != 0) {
-                val currentPage = pdfDocument.getPage(pdfDocument.numberOfPages)
-                currentPage.setRotation(page.rotation)
-            }
+        // الخطوة 2: حذف الملف الأصلي
+        android.util.Log.d("EditPDF", "الخطوة 2: حذف الملف الأصلي...")
+        if (originalFile.exists()) {
+            originalFile.delete()
         }
         
-        document.close()
-        pdfDocument.close()
-        writer.close()
+        // الخطوة 3: إعادة تسمية الملف المؤقت ليحل محل الأصلي
+        android.util.Log.d("EditPDF", "الخطوة 3: إعادة تسمية الملف المؤقت...")
+        tempFile.renameTo(originalFile)
         
-        outputPath
+        android.util.Log.d("EditPDF", "===== تم الحفظ بنجاح =====")
     } catch (e: Exception) {
+        android.util.Log.e("EditPDF", "❌ خطأ في الحفظ: ${e.message}")
         e.printStackTrace()
+        
+        // في حالة حدوث خطأ، احذف الملف المؤقت
+        if (tempFile.exists()) {
+            tempFile.delete()
+        }
         throw e
     }
 }
 
+/**
+ * إنشاء PDF معدل بالترتيب والدوران الجديد
+ * @param sourcePath مسار PDF الأصلي
+ * @param destPath مسار PDF الناتج
+ * @param pages قائمة الصفحات المعدلة
+ */
+private fun createModifiedPDF(
+    sourcePath: String,
+    destPath: String,
+    pages: List<PDFPageData>
+) {
+    android.util.Log.d("EditPDF", ">> createModifiedPDF: بدء إنشاء PDF معدل")
+    
+    // فتح الملف الأصلي للقراءة
+    val reader = PdfReader(FileInputStream(sourcePath))
+    val sourcePdf = PdfDocument(reader)
+    
+    val totalPagesInSource = sourcePdf.numberOfPages
+    android.util.Log.d("EditPDF", ">> عدد الصفحات في PDF الأصلي: $totalPagesInSource")
+    
+    // إنشاء الملف الجديد للكتابة
+    val writer = PdfWriter(FileOutputStream(destPath))
+    val destPdf = PdfDocument(writer)
+    
+    try {
+        // نسخ الصفحات بالترتيب الجديد
+        pages.forEachIndexed { index, pageData ->
+            android.util.Log.d("EditPDF", ">> معالجة الصفحة $index:")
+            android.util.Log.d("EditPDF", "   - رقم الصفحة المطلوب: ${pageData.pageNumber}")
+            android.util.Log.d("EditPDF", "   - الدوران: ${pageData.rotation}°")
+            
+            // التحقق من أن رقم الصفحة ضمن النطاق
+            if (pageData.pageNumber < 1 || pageData.pageNumber > totalPagesInSource) {
+                val errorMsg = "رقم الصفحة ${pageData.pageNumber} خارج النطاق! (النطاق: 1-$totalPagesInSource)"
+                android.util.Log.e("EditPDF", "❌ $errorMsg")
+                throw IllegalArgumentException(errorMsg)
+            }
+            
+            // نسخ الصفحة باستخدام copyPagesTo (الطريقة الموصى بها)
+            android.util.Log.d("EditPDF", "   - جاري نسخ الصفحة...")
+            
+            sourcePdf.copyPagesTo(
+                pageData.pageNumber,
+                pageData.pageNumber,
+                destPdf
+            )
+            
+            // الحصول على آخر صفحة مضافة
+            val copiedPage = destPdf.getLastPage()
+            
+            // قراءة التدوير الحالي للصفحة المنسوخة
+            val currentRotation = copiedPage.rotation
+            android.util.Log.d("EditPDF", "   - التدوير بعد النسخ: $currentRotation°")
+            android.util.Log.d("EditPDF", "   - التدوير المطلوب: ${pageData.rotation}°")
+            
+            // تطبيق التدوير المطلوب مباشرة (setRotation يستبدل القيمة القديمة)
+            copiedPage.setRotation(pageData.rotation)
+            
+            android.util.Log.d("EditPDF", "   - التدوير النهائي: ${copiedPage.rotation}°")
+            android.util.Log.d("EditPDF", "   ✓ تم معالجة الصفحة بنجاح")
+        }
+        
+        android.util.Log.d("EditPDF", ">> ✓ تم إنشاء PDF معدل بنجاح (${destPdf.numberOfPages} صفحة)")
+    } catch (e: Exception) {
+        android.util.Log.e("EditPDF", ">> ❌ خطأ في createModifiedPDF: ${e.message}")
+        e.printStackTrace()
+        throw e
+    } finally {
+        // إغلاق المستندات
+        android.util.Log.d("EditPDF", ">> إغلاق المستندات...")
+        destPdf.close()
+        sourcePdf.close()
+        writer.close()
+        reader.close()
+    }
+}
