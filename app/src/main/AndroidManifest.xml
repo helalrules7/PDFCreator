@@ -85,9 +85,23 @@
             android:parentActivityName=".MainActivity"
              />
         
+        <activity
+            android:name=".PageNumberSettingsActivity"
+            android:exported="false"
+            android:label="@string/page_numbers_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".EditPDFActivity" />
+        
+        <activity
+            android:name=".WatermarkSettingsActivity"
+            android:exported="false"
+            android:label="@string/watermark_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".EditPDFActivity" />
+        
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.file provider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

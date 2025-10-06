@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)
 ![Kotlin](https://img.shields.io/badge/Kotlin-100%25-purple.svg)
 ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)
@@ -22,16 +22,37 @@
 - ✅ **Custom Titles** - Add personalized titles to your PDF files
 - ✅ **Share & Print** - Easy sharing and printing through system integration
 - ✅ **Edit PDF** - Rotate pages and rearrange page order
+- ✅ **Page Numbering** - Add customizable page numbers (NEW in v1.2.0)
+- ✅ **Watermark** - Add custom watermarks to protect your documents (NEW in v1.2.0)
 - ✅ **File Manager** - Browse, view, and delete your PDF files
 - ✅ **Multilingual** - Full support for Arabic (RTL) and English
-- ✅ **Modern UI** - Beautiful Material Design 3 interface
+- ✅ **Modern UI** - Beautiful Material Design 3 with macOS-style Dock Bar
 
 ### ✏️ **PDF Editing**
 - Rotate individual pages by 90° increments (90°, 180°, 270°, 360°)
 - Move pages up or down to reorder your document
 - Real-time preview of all changes
-- Save edited PDF as a new file with custom naming
+- Save edited PDF with automatic overwrite
 - Maintains original page rotations when loading
+- **NEW**: macOS-style Dock Bar for quick access to editing tools
+
+### 🔢 **Page Numbering** (NEW in v1.2.0)
+- Add customizable page numbers to your PDFs
+- 6 position options: Header/Footer × Left/Center/Right
+- 3 numbering formats: Simple numbers, "Page X", or "X of Total"
+- Adjustable font size (8-20pt)
+- Optional: Show/hide on first page
+- Custom start number
+- Numbers always appear on top of content
+
+### 💧 **Watermark** (NEW in v1.2.0)
+- Add custom text watermarks to protect your PDFs
+- 7 color options: Black, Gray, Red, Blue, Green, Orange, Purple
+- Adjustable font size (20-100pt)
+- Adjustable opacity (10%-100%)
+- Adjustable rotation (-90° to +90°)
+- Live preview before applying
+- Watermark always appears on top of all content
 
 ### 📁 **File Management**
 - View all PDFs created with the app
@@ -90,7 +111,24 @@ Download the latest APK from the [Releases](https://github.com/helalrules7/PDFCr
 2. **Tap Edit**: Select "Edit PDF" button
 3. **Rotate**: Tap rotate button (🔄) to rotate any page
 4. **Reorder**: Use up (⬆️) and down (⬇️) buttons to move pages
-5. **Save**: Tap save (✓) and enter a new title
+5. **Save**: Tap save (✓) to save changes
+
+### Adding Page Numbers (NEW)
+1. **Open Edit Mode**: Edit any PDF
+2. **Tap "123" in Dock Bar**: Access page numbering settings
+3. **Choose Position**: Select from 6 positions (Header/Footer × Left/Center/Right)
+4. **Customize**: Set font size, start number, and format
+5. **Apply**: Tap "Apply" to add numbers
+6. **Save**: Numbers are saved with the PDF
+
+### Adding Watermark (NEW)
+1. **Open Edit Mode**: Edit any PDF
+2. **Tap "©" in Dock Bar**: Access watermark settings
+3. **Enter Text**: Type your watermark text (e.g., "CONFIDENTIAL")
+4. **Customize**: Choose color, size, opacity, and rotation
+5. **Preview**: See live preview of your watermark
+6. **Apply**: Tap "Apply" to add watermark
+7. **Save**: Watermark is saved with the PDF
 
 ### Managing Files
 1. **Open Menu**: Tap the menu icon (☰) in top-left
@@ -130,14 +168,16 @@ PDFCreator/
 ├── app/
 │   ├── src/
 │   │   ├── main/
-│   │   │   ├── java/com/example/pdfcreator/
-│   │   │   │   ├── MainActivity.kt           # Main entry point
-│   │   │   │   ├── MyPDFsActivity.kt         # File browser
-│   │   │   │   ├── EditPDFActivity.kt        # PDF editor
-│   │   │   │   ├── SettingsActivity.kt       # Settings
-│   │   │   │   ├── AboutActivity.kt          # About screen
-│   │   │   │   ├── HelpActivity.kt           # Help guide
-│   │   │   │   ├── BaseActivity.kt           # Base activity
+│   │   │   ├── java/com/tsavvy/pdfcreator/
+│   │   │   │   ├── MainActivity.kt                  # Main entry point
+│   │   │   │   ├── MyPDFsActivity.kt                # File browser
+│   │   │   │   ├── EditPDFActivity.kt               # PDF editor with Dock Bar
+│   │   │   │   ├── PageNumberSettingsActivity.kt    # Page numbering (NEW)
+│   │   │   │   ├── WatermarkSettingsActivity.kt     # Watermark settings (NEW)
+│   │   │   │   ├── SettingsActivity.kt              # Settings
+│   │   │   │   ├── AboutActivity.kt                 # About screen
+│   │   │   │   ├── HelpActivity.kt                  # Help guide
+│   │   │   │   ├── BaseActivity.kt                  # Base activity
 │   │   │   │   └── ui/
 │   │   │   │       ├── PDFCreatorViewModel.kt
 │   │   │   │       ├── PDFViewScreen.kt
@@ -164,18 +204,20 @@ Perfect for:
 - 📝 Organizing scanned documents
 - ✏️ Fixing page orientation in existing PDFs
 - 🔄 Reordering pages in PDF documents
+- 🔢 Adding professional page numbers to reports
+- 💧 Protecting documents with watermarks
 - 📁 Managing personal PDF collections
 
 ## 📊 Project Statistics
 
 | Metric | Value |
 |--------|-------|
-| **Total Lines of Code** | ~3,500+ |
-| **Kotlin Files** | 15 |
-| **Activities** | 6 |
-| **Composable Functions** | 20+ |
+| **Total Lines of Code** | ~5,000+ |
+| **Kotlin Files** | 17 |
+| **Activities** | 8 |
+| **Composable Functions** | 30+ |
 | **Supported Languages** | 2 (Arabic, English) |
-| **String Resources** | 160+ |
+| **String Resources** | 200+ |
 | **Build Time** | ~30-45 seconds |
 | **APK Size** | ~8-10 MB |
 
@@ -185,17 +227,23 @@ None currently. [Report an issue](https://github.com/helalrules7/PDFCreator/issu
 
 ## 🗺️ Roadmap
 
-### v1.2.0 (Next Release)
+### v1.2.0 (Current Release) ✅
+- [x] Add page numbering with customizable options
+- [x] Add watermark feature with live preview
+- [x] macOS-style Dock Bar for quick tool access
+- [x] Enhanced PDF editing experience
+
+### v1.3.0 (Next Release)
 - [ ] Merge multiple PDFs into one
 - [ ] Split PDF into multiple files
 - [ ] Dark theme option
 - [ ] PDF compression
 
-### v1.3.0 (Future)
+### v1.4.0 (Future)
 - [ ] Add text annotations to PDFs
-- [ ] Add watermarks
 - [ ] Password protection for PDFs
 - [ ] Cloud backup integration (Google Drive, Dropbox)
+- [ ] Advanced watermark patterns
 
 ### v2.0.0 (Long-term)
 - [ ] OCR (Optical Character Recognition)
@@ -327,6 +375,7 @@ This might be due to memory constraints. Try:
 
 | Version | Release Date | Highlights |
 |---------|--------------|------------|
+| **1.2.0** | 2025-10-06 | Page Numbering, Watermark, macOS-style Dock Bar |
 | **1.1.0** | 2025-10-02 | PDF Editing, File Manager, Bug fixes |
 | **1.0.0** | 2025-09-XX | Initial release with core features |
 

@@ -1,5 +1,6 @@
 package com.tsavvy.pdfcreator
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -7,12 +8,15 @@ import android.graphics.Matrix
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -40,6 +44,14 @@ import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas
+import com.itextpdf.kernel.geom.Rectangle
+import com.itextpdf.kernel.pdf.PdfPage
+import com.itextpdf.kernel.font.PdfFontFactory
+import com.itextpdf.io.font.constants.StandardFonts
+import com.itextpdf.kernel.colors.ColorConstants
+import com.itextpdf.kernel.colors.DeviceRgb
+import com.itextpdf.kernel.pdf.extgstate.PdfExtGState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -123,10 +135,127 @@ fun EditPDFScreen(
     var lastModificationTime by remember { mutableStateOf(0L) }
     var needsReload by remember { mutableStateOf(false) }
     var reloadTrigger by remember { mutableStateOf(0) }
+    var pageNumberSettings by remember { mutableStateOf<PageNumberSettings?>(null) }
+    var isAddingPageNumbers by remember { mutableStateOf(false) }
+    
+    // إعدادات العلامة المائية
+    var watermarkSettings by remember { mutableStateOf<WatermarkSettings?>(null) }
+    var isAddingWatermark by remember { mutableStateOf(false) }
+    
+    // Launcher لفتح إعدادات أرقام الصفحات
+    val pageNumberSettingsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val settings = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                result.data?.getSerializableExtra("page_number_settings", PageNumberSettings::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                result.data?.getSerializableExtra("page_number_settings") as? PageNumberSettings
+            }
+            
+            if (settings != null) {
+                isAddingPageNumbers = true
+                scope.launch {
+                    try {
+                        addPageNumbersToPDF(context, pdfPath, settings, pages.size)
+                        pageNumberSettings = settings
+                        
+                        // إعادة تحميل الصفحات بعد إضافة الأرقام
+                        needsReload = true
+                        reloadTrigger++
+                        
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                                context,
+                                context.getString(R.string.page_numbers_added),
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "خطأ: ${e.message}",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } finally {
+                        isAddingPageNumbers = false
+                    }
+                }
+            }
+        }
+    }
+    
+    // Launcher لفتح إعدادات العلامة المائية
+    val watermarkSettingsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val settings = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                result.data?.getSerializableExtra("watermark_settings", WatermarkSettings::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                result.data?.getSerializableExtra("watermark_settings") as? WatermarkSettings
+            }
+            
+            if (settings != null) {
+                isAddingWatermark = true
+                scope.launch {
+                    try {
+                        addWatermarkToPDF(context, pdfPath, settings)
+                        watermarkSettings = settings
+                        
+                        // إعادة تحميل الصفحات بعد إضافة العلامة المائية
+                        needsReload = true
+                        reloadTrigger++
+                        
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                                context,
+                                context.getString(R.string.watermark_added),
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        withContext(Dispatchers.Main) {
+                            android.widget.Toast.makeText(
+                                context,
+                                "خطأ: ${e.message}",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } finally {
+                        isAddingWatermark = false
+                    }
+                }
+            }
+        }
+    }
     
     // ==================== تحميل صفحات PDF ====================
     LaunchedEffect(pdfPath) {
         if (pdfPath.isNotEmpty()) {
+            // التحقق من وجود الملف أولاً
+            val file = File(pdfPath)
+            if (!file.exists()) {
+                android.util.Log.e("EditPDF", "❌ الملف غير موجود: $pdfPath")
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(
+                        context,
+                        "الملف غير موجود أو تم حذفه",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    
+                    // الرجوع للشاشة الرئيسية
+                    (context as? android.app.Activity)?.finish()
+                }
+                return@LaunchedEffect
+            }
+            
             try {
                 val loadedPages = loadPDFPages(context, pdfPath)
                 pages = loadedPages
@@ -135,6 +264,18 @@ fun EditPDFScreen(
                 e.printStackTrace()
                 errorMessage = e.message
                 isLoading = false
+                
+                // إذا كان الخطأ هو أن الملف غير موجود، الرجوع للشاشة الرئيسية
+                if (e is java.io.FileNotFoundException) {
+                    withContext(Dispatchers.Main) {
+                        android.widget.Toast.makeText(
+                            context,
+                            "الملف غير موجود: ${e.message}",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                        (context as? android.app.Activity)?.finish()
+                    }
+                }
             }
         }
     }
@@ -184,7 +325,7 @@ fun EditPDFScreen(
                                 isSaving = true
                                 scope.launch {
                                     try {
-                                        savePDFToOriginalPath(context, pdfPath, pages)
+                                        savePDFToOriginalPath(context, pdfPath, pages, pageNumberSettings)
                                         hasUnsavedChanges = false
                                         
                                         isSaving = false
@@ -213,11 +354,23 @@ fun EditPDFScreen(
                                         e.printStackTrace()
                                         
                                         withContext(Dispatchers.Main) {
+                                            val errorMsg = when (e) {
+                                                is java.io.FileNotFoundException -> "الملف غير موجود أو تم حذفه"
+                                                is java.io.IOException -> "فشل في الحفظ: لا يمكن الوصول للملف"
+                                                else -> "فشل في حفظ الملف: ${e.message}"
+                                            }
+                                            
                                             android.widget.Toast.makeText(
                                                 context,
-                                                "فشل في حفظ الملف: ${e.message}",
+                                                errorMsg,
                                                 android.widget.Toast.LENGTH_LONG
                                             ).show()
+                                            
+                                            // إذا كان الملف غير موجود، ارجع للشاشة الرئيسية بعد ثانية
+                                            if (e is java.io.FileNotFoundException) {
+                                                delay(1000)
+                                                (context as? android.app.Activity)?.finish()
+                                            }
                                         }
                                         
                                         errorMessage = e.message
@@ -278,7 +431,150 @@ fun EditPDFScreen(
                     )
                 }
             }
+            
+            // ==================== Dock Bar (شريط الأدوات السفلي) ====================
+            if (!isLoading && pages.isNotEmpty()) {
+                MacOSDockBar(
+                    onPageNumbersClick = {
+                        val intent = Intent(context, PageNumberSettingsActivity::class.java).apply {
+                            putExtra("current_settings", pageNumberSettings)
+                        }
+                        pageNumberSettingsLauncher.launch(intent)
+                    },
+                    isPageNumbersActive = pageNumberSettings != null,
+                    onWatermarkClick = {
+                        val intent = Intent(context, WatermarkSettingsActivity::class.java).apply {
+                            putExtra("current_settings", watermarkSettings)
+                        }
+                        watermarkSettingsLauncher.launch(intent)
+                    },
+                    isWatermarkActive = watermarkSettings != null,
+                    enabled = !isAddingPageNumbers && !isSaving && !isAddingWatermark,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 24.dp)
+                )
+            }
         }
+    }
+}
+
+/**
+ * ==========================================
+ * Dock Bar على طراز macOS
+ * ==========================================
+ * شريط أدوات سفلي عائم مع تأثيرات جميلة
+ */
+@Composable
+private fun MacOSDockBar(
+    onPageNumbersClick: () -> Unit,
+    isPageNumbersActive: Boolean,
+    onWatermarkClick: () -> Unit,
+    isWatermarkActive: Boolean,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(24.dp),
+                clip = false
+            )
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // زر أرقام الصفحات
+        DockBarButton(
+            onClick = onPageNumbersClick,
+            enabled = enabled,
+            isActive = isPageNumbersActive,
+            icon = {
+                Text(
+                    text = "123",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = when {
+                        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        isPageNumbersActive -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            },
+            label = "أرقام الصفحات"
+        )
+        
+        // زر العلامة المائية
+        DockBarButton(
+            onClick = onWatermarkClick,
+            enabled = enabled,
+            isActive = isWatermarkActive,
+            icon = {
+                Text(
+                    text = "©",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = when {
+                        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        isWatermarkActive -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            },
+            label = "علامة مائية"
+        )
+    }
+}
+
+/**
+ * زر في Dock Bar
+ */
+@Composable
+private fun DockBarButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    isActive: Boolean,
+    icon: @Composable () -> Unit,
+    label: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (isActive) 
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                else 
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+            )
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .then(
+                if (enabled) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(onTap = { onClick() })
+                    }
+                } else {
+                    Modifier
+                }
+            )
+    ) {
+        icon()
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = when {
+                !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                isActive -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            }
+        )
     }
 }
 
@@ -298,7 +594,8 @@ private fun PDFPagesListView(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp)
+            .padding(top = 16.dp, bottom = 120.dp), // padding إضافي في الأسفل للـ dock bar
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         itemsIndexed(
@@ -659,6 +956,16 @@ private suspend fun loadPDFPages(
     val pages = mutableListOf<PDFPageData>()
     val file = File(pdfPath)
     
+    // التحقق من وجود الملف
+    if (!file.exists()) {
+        val errorMsg = "الملف غير موجود: $pdfPath"
+        android.util.Log.e("EditPDF", "❌ $errorMsg")
+        throw java.io.FileNotFoundException(errorMsg)
+    }
+    
+    android.util.Log.d("EditPDF", ">>> بدء تحميل الصفحات من: $pdfPath")
+    android.util.Log.d("EditPDF", ">>> حجم الملف: ${file.length()} bytes")
+    
     try {
         // قراءة دوران الصفحات من PDF باستخدام iTextPDF
         val pdfReader = PdfReader(file)
@@ -773,9 +1080,24 @@ private suspend fun autoSavePDF(
 private suspend fun savePDFToOriginalPath(
     context: Context,
     originalPath: String,
-    pages: List<PDFPageData>
+    pages: List<PDFPageData>,
+    pageNumberSettings: PageNumberSettings? = null
 ) = withContext(Dispatchers.IO) {
     val originalFile = File(originalPath)
+    
+    // التحقق من وجود الملف
+    if (!originalFile.exists()) {
+        val errorMsg = "الملف غير موجود: $originalPath"
+        android.util.Log.e("EditPDF", "❌ $errorMsg")
+        throw java.io.FileNotFoundException(errorMsg)
+    }
+    
+    if (!originalFile.canRead()) {
+        val errorMsg = "لا يمكن قراءة الملف: $originalPath"
+        android.util.Log.e("EditPDF", "❌ $errorMsg")
+        throw java.io.IOException(errorMsg)
+    }
+    
     val tempFile = File(originalFile.parent, "${originalFile.name}.tmp")
     
     pages.forEachIndexed { index, page ->
@@ -783,7 +1105,10 @@ private suspend fun savePDFToOriginalPath(
     
     try {
         // الخطوة 1: إنشاء PDF مؤقت جديد مع التعديلات
+        android.util.Log.d("EditPDF", ">>> بدء إنشاء PDF معدل من: $originalPath")
         createModifiedPDF(originalPath, tempFile.absolutePath, pages)
+        android.util.Log.d("EditPDF", "✅ تم إنشاء PDF معدل مؤقت")
+
         
         // الخطوة 2: حذف الملف الأصلي
         if (originalFile.exists()) {
@@ -792,6 +1117,12 @@ private suspend fun savePDFToOriginalPath(
         
         // الخطوة 3: إعادة تسمية الملف المؤقت ليحل محل الأصلي
         tempFile.renameTo(originalFile)
+        
+        // الخطوة 4: إعادة تطبيق أرقام الصفحات إذا كانت موجودة
+        if (pageNumberSettings != null) {
+            android.util.Log.d("EditPDF", ">>> إعادة تطبيق أرقام الصفحات بعد إعادة الترتيب")
+            addPageNumbersToPDF(context, originalPath, pageNumberSettings, pages.size)
+        }
         
     } catch (e: Exception) {
         android.util.Log.e("EditPDF", "❌ خطأ في الحفظ: ${e.message}")
@@ -861,5 +1192,360 @@ private fun createModifiedPDF(
         sourcePdf.close()
         writer.close()
         reader.close()
+    }
+}
+
+/**
+ * إضافة أرقام الصفحات إلى PDF
+ */
+private suspend fun addPageNumbersToPDF(
+    context: Context,
+    pdfPath: String,
+    settings: PageNumberSettings,
+    totalPages: Int
+) = withContext(Dispatchers.IO) {
+    val sourceFile = File(pdfPath)
+    val tempFile = File(sourceFile.parent, "${sourceFile.name}.numbering.tmp")
+    
+    try {
+        android.util.Log.d("EditPDF", ">>> بدء إضافة أرقام الصفحات إلى: $pdfPath")
+        
+        if (!sourceFile.exists()) {
+            throw Exception("الملف غير موجود: $pdfPath")
+        }
+        
+        android.util.Log.d("EditPDF", ">>> حجم الملف قبل إضافة الأرقام: ${sourceFile.length()} bytes")
+        android.util.Log.d("EditPDF", ">>> إعدادات الترقيم:")
+        android.util.Log.d("EditPDF", "    - الموقع: ${settings.position}")
+        android.util.Log.d("EditPDF", "    - رقم البداية: ${settings.startNumber}")
+        android.util.Log.d("EditPDF", "    - حجم الخط: ${settings.fontSize}")
+        android.util.Log.d("EditPDF", "    - عرض في الصفحة الأولى: ${settings.showOnFirstPage}")
+        android.util.Log.d("EditPDF", "    - نمط الترقيم: ${settings.format}")
+        android.util.Log.d("EditPDF", "    - إجمالي الصفحات: $totalPages")
+        
+        val reader = PdfReader(sourceFile)
+        val writer = PdfWriter(tempFile)
+        val pdfDocument = PdfDocument(reader, writer)
+        
+        // الخط القياسي - نستخدم HELVETICA_BOLD لوضوح أفضل
+        val font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD)
+        
+        var addedCount = 0
+        
+        // المرور على كل صفحات PDF
+        for (i in 1..pdfDocument.numberOfPages) {
+            // تخطي الصفحة الأولى إذا كان الإعداد لا يسمح بعرضها
+            if (!settings.showOnFirstPage && i == 1) {
+                android.util.Log.d("EditPDF", ">>> تخطي الصفحة الأولى (حسب الإعدادات)")
+                continue
+            }
+            
+            val page = pdfDocument.getPage(i)
+            val pageSize = page.pageSize
+            
+            // رقم الصفحة الفعلي
+            val pageNumber = i - 1 + settings.startNumber
+            
+            // تنسيق رقم الصفحة
+            val pageText = settings.format
+                .replace("{page}", pageNumber.toString())
+                .replace("{total}", totalPages.toString())
+            
+            android.util.Log.d("EditPDF", ">>> إضافة رقم للصفحة $i: \"$pageText\"")
+            
+            // تحديد الموقع
+            val (x, y) = calculatePageNumberPosition(
+                settings.position,
+                pageSize,
+                pageText,
+                font,
+                settings.fontSize
+            )
+            
+            android.util.Log.d("EditPDF", "    - الموقع: x=$x, y=$y")
+            
+            // إضافة النص فوق كل المحتوى (overlay)
+            // استخدام newContentStreamAfter() لضمان أن النص يظهر فوق كل العناصر
+            val canvas = PdfCanvas(page.newContentStreamAfter(), page.resources, pdfDocument)
+            
+            // تعيين لون النص (أسود)
+            canvas.setFillColor(com.itextpdf.kernel.colors.ColorConstants.BLACK)
+            
+            canvas.beginText()
+            canvas.setFontAndSize(font, settings.fontSize)
+            canvas.moveText(x.toDouble(), y.toDouble())
+            canvas.showText(pageText)
+            canvas.endText()
+            
+            addedCount++
+        }
+        
+        android.util.Log.d("EditPDF", ">>> تم إضافة أرقام لعدد $addedCount صفحة من أصل ${pdfDocument.numberOfPages}")
+        
+        pdfDocument.close()
+        
+        android.util.Log.d("EditPDF", ">>> تم إغلاق الملف المؤقت، حجمه: ${tempFile.length()} bytes")
+        
+        // التأكد من أن الملف المؤقت تم إنشاؤه بنجاح
+        if (!tempFile.exists() || tempFile.length() == 0L) {
+            throw Exception("فشل في إنشاء الملف المؤقت")
+        }
+        
+        // استبدال الملف الأصلي بالملف المؤقت بشكل آمن
+        android.util.Log.d("EditPDF", ">>> بدء استبدال الملف الأصلي...")
+        
+        // حذف الملف الأصلي
+        if (sourceFile.exists()) {
+            val deleted = sourceFile.delete()
+            if (!deleted) {
+                throw Exception("فشل في حذف الملف الأصلي")
+            }
+            android.util.Log.d("EditPDF", ">>> تم حذف الملف الأصلي")
+        }
+        
+        // إعادة تسمية الملف المؤقت
+        val renamed = tempFile.renameTo(sourceFile)
+        if (!renamed) {
+            // إذا فشلت إعادة التسمية، نسخ الملف يدوياً
+            android.util.Log.w("EditPDF", "⚠️ فشل renameTo، محاولة النسخ اليدوي...")
+            tempFile.copyTo(sourceFile, overwrite = true)
+            tempFile.delete()
+        }
+        
+        android.util.Log.d("EditPDF", ">>> حجم الملف بعد الاستبدال: ${sourceFile.length()} bytes")
+        
+        // التأكد من أن الملف الجديد موجود
+        if (!sourceFile.exists()) {
+            throw Exception("فشل في إنشاء الملف بعد إضافة الأرقام")
+        }
+        
+        android.util.Log.d("EditPDF", "✅ تم إضافة أرقام الصفحات بنجاح")
+        
+    } catch (e: Exception) {
+        android.util.Log.e("EditPDF", "❌ خطأ في إضافة أرقام الصفحات: ${e.message}")
+        e.printStackTrace()
+        
+        // حذف الملف المؤقت في حالة حدوث خطأ
+        if (tempFile.exists()) {
+            tempFile.delete()
+            android.util.Log.d("EditPDF", ">>> تم حذف الملف المؤقت بعد الخطأ")
+        }
+        
+        throw e
+    }
+}
+
+/**
+ * حساب موقع رقم الصفحة
+ * @param position الموقع المطلوب (Header/Footer + Left/Center/Right)
+ * @param pageSize حجم الصفحة
+ * @param text النص المراد إضافته
+ * @param font الخط المستخدم
+ * @param fontSize حجم الخط
+ * @return زوج من (x, y) للموقع
+ */
+private fun calculatePageNumberPosition(
+    position: PageNumberPosition,
+    pageSize: Rectangle,
+    text: String,
+    font: com.itextpdf.kernel.font.PdfFont,
+    fontSize: Float
+): Pair<Float, Float> {
+    // حساب عرض النص بشكل صحيح
+    // getWidth() يعطي وحدات الخط، يجب ضربها بـ fontSize وقسمتها على 1000
+    val textWidth = font.getWidth(text, fontSize) / 1000f * fontSize
+    
+    // الهوامش
+    val horizontalMargin = 40f // هامش من الحواف اليمنى/اليسرى
+    val verticalPadding = 25f // مسافة من الأعلى/الأسفل
+    
+    val (x, y) = when (position) {
+        PageNumberPosition.HEADER_LEFT -> {
+            // يسار في Header
+            Pair(horizontalMargin, pageSize.height - verticalPadding)
+        }
+        PageNumberPosition.HEADER_CENTER -> {
+            // وسط في Header
+            Pair((pageSize.width - textWidth) / 2, pageSize.height - verticalPadding)
+        }
+        PageNumberPosition.HEADER_RIGHT -> {
+            // يمين في Header
+            Pair(pageSize.width - textWidth - horizontalMargin, pageSize.height - verticalPadding)
+        }
+        PageNumberPosition.FOOTER_LEFT -> {
+            // يسار في Footer
+            Pair(horizontalMargin, verticalPadding)
+        }
+        PageNumberPosition.FOOTER_CENTER -> {
+            // وسط في Footer
+            Pair((pageSize.width - textWidth) / 2, verticalPadding)
+        }
+        PageNumberPosition.FOOTER_RIGHT -> {
+            // يمين في Footer
+            Pair(pageSize.width - textWidth - horizontalMargin, verticalPadding)
+        }
+    }
+    
+    android.util.Log.d("EditPDF", "    - pageSize: ${pageSize.width}x${pageSize.height}")
+    android.util.Log.d("EditPDF", "    - textWidth (محسوب): $textWidth pixels, fontSize: $fontSize")
+    android.util.Log.d("EditPDF", "    - النص: \"$text\"")
+    
+    return Pair(x, y)
+}
+
+/**
+ * إضافة علامة مائية إلى PDF
+ */
+private suspend fun addWatermarkToPDF(
+    context: Context,
+    pdfPath: String,
+    settings: WatermarkSettings
+) = withContext(Dispatchers.IO) {
+    val sourceFile = File(pdfPath)
+    val tempFile = File(sourceFile.parent, "${sourceFile.name}.watermark.tmp")
+    
+    try {
+        android.util.Log.d("EditPDF", ">>> بدء إضافة العلامة المائية إلى: $pdfPath")
+        
+        if (!sourceFile.exists()) {
+            throw Exception("الملف غير موجود: $pdfPath")
+        }
+        
+        android.util.Log.d("EditPDF", ">>> حجم الملف قبل إضافة العلامة المائية: ${sourceFile.length()} bytes")
+        android.util.Log.d("EditPDF", ">>> إعدادات العلامة المائية:")
+        android.util.Log.d("EditPDF", "    - النص: ${settings.text}")
+        android.util.Log.d("EditPDF", "    - اللون: ${settings.color}")
+        android.util.Log.d("EditPDF", "    - حجم الخط: ${settings.fontSize}")
+        android.util.Log.d("EditPDF", "    - الشفافية: ${settings.opacity}")
+        android.util.Log.d("EditPDF", "    - الميل: ${settings.rotation}°")
+        
+        val reader = PdfReader(sourceFile)
+        val writer = PdfWriter(tempFile)
+        val pdfDocument = PdfDocument(reader, writer)
+        
+        // الخط القياسي - استخدام HELVETICA_BOLD للوضوح
+        val font = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD)
+        
+        // اللون مع الشفافية
+        val color = com.itextpdf.kernel.colors.DeviceRgb(
+            settings.color.red,
+            settings.color.green,
+            settings.color.blue
+        )
+        
+        var addedCount = 0
+        
+        // المرور على كل صفحات PDF
+        for (i in 1..pdfDocument.numberOfPages) {
+            val page = pdfDocument.getPage(i)
+            val pageSize = page.pageSize
+            
+            android.util.Log.d("EditPDF", ">>> إضافة علامة مائية للصفحة $i")
+            
+            // حساب موقع النص في منتصف الصفحة
+            val textWidth = font.getWidth(settings.text, settings.fontSize) / 1000f * settings.fontSize
+            val x = (pageSize.width - textWidth) / 2
+            val y = pageSize.height / 2
+            
+            android.util.Log.d("EditPDF", "    - الموقع: x=$x, y=$y")
+            android.util.Log.d("EditPDF", "    - حجم الصفحة: ${pageSize.width}x${pageSize.height}")
+            
+            // إضافة النص فوق كل المحتوى (overlay)
+            // استخدام newContentStreamAfter() لضمان أن النص يظهر فوق كل العناصر
+            val canvas = PdfCanvas(page.newContentStreamAfter(), page.resources, pdfDocument)
+            
+            // حفظ الحالة
+            canvas.saveState()
+            
+            // تطبيق الشفافية
+            val extGState = com.itextpdf.kernel.pdf.extgstate.PdfExtGState()
+            extGState.setFillOpacity(settings.opacity)
+            canvas.setExtGState(extGState)
+            
+            // تطبيق اللون
+            canvas.setFillColor(color)
+            
+            canvas.beginText()
+            canvas.setFontAndSize(font, settings.fontSize)
+            
+            // نقل النص إلى المركز
+            canvas.moveText(x.toDouble(), y.toDouble())
+            
+            // تطبيق الميل (rotation)
+            if (settings.rotation != 0) {
+                // حساب الميل بالراديان
+                val angleInRadians = Math.toRadians(settings.rotation.toDouble())
+                val cos = Math.cos(angleInRadians)
+                val sin = Math.sin(angleInRadians)
+                
+                // تطبيق matrix transformation للميل حول نقطة النص
+                canvas.setTextMatrix(
+                    cos.toFloat(), sin.toFloat(),
+                    (-sin).toFloat(), cos.toFloat(),
+                    x, y
+                )
+            }
+            
+            canvas.showText(settings.text)
+            canvas.endText()
+            
+            // استعادة الحالة
+            canvas.restoreState()
+            
+            addedCount++
+        }
+        
+        android.util.Log.d("EditPDF", ">>> تم إضافة علامة مائية لعدد $addedCount صفحة من أصل ${pdfDocument.numberOfPages}")
+        
+        pdfDocument.close()
+        
+        android.util.Log.d("EditPDF", ">>> تم إغلاق الملف المؤقت، حجمه: ${tempFile.length()} bytes")
+        
+        // التأكد من أن الملف المؤقت تم إنشاؤه بنجاح
+        if (!tempFile.exists() || tempFile.length() == 0L) {
+            throw Exception("فشل في إنشاء الملف المؤقت")
+        }
+        
+        // استبدال الملف الأصلي بالملف المؤقت بشكل آمن
+        android.util.Log.d("EditPDF", ">>> بدء استبدال الملف الأصلي...")
+        
+        // حذف الملف الأصلي
+        if (sourceFile.exists()) {
+            val deleted = sourceFile.delete()
+            if (!deleted) {
+                throw Exception("فشل في حذف الملف الأصلي")
+            }
+            android.util.Log.d("EditPDF", ">>> تم حذف الملف الأصلي")
+        }
+        
+        // إعادة تسمية الملف المؤقت
+        val renamed = tempFile.renameTo(sourceFile)
+        if (!renamed) {
+            // إذا فشلت إعادة التسمية، نسخ الملف يدوياً
+            android.util.Log.w("EditPDF", "⚠️ فشل renameTo، محاولة النسخ اليدوي...")
+            tempFile.copyTo(sourceFile, overwrite = true)
+            tempFile.delete()
+        }
+        
+        android.util.Log.d("EditPDF", ">>> حجم الملف بعد الاستبدال: ${sourceFile.length()} bytes")
+        
+        // التأكد من أن الملف الجديد موجود
+        if (!sourceFile.exists()) {
+            throw Exception("فشل في إنشاء الملف بعد إضافة العلامة المائية")
+        }
+        
+        android.util.Log.d("EditPDF", "✅ تم إضافة العلامة المائية بنجاح")
+        
+    } catch (e: Exception) {
+        android.util.Log.e("EditPDF", "❌ خطأ في إضافة العلامة المائية: ${e.message}")
+        e.printStackTrace()
+        
+        // حذف الملف المؤقت في حالة حدوث خطأ
+        if (tempFile.exists()) {
+            tempFile.delete()
+            android.util.Log.d("EditPDF", ">>> تم حذف الملف المؤقت بعد الخطأ")
+        }
+        
+        throw e
     }
 }
