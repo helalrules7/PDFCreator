@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,9 +16,26 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.1"
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Load keystore properties from local.properties
+    val keystorePropertiesFile = rootProject.file("local.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystoreFile = keystoreProperties.getProperty("RELEASE_STORE_FILE") ?: "pdf-creator-release-key.jks"
+            storeFile = file(keystoreFile)
+            storePassword = keystoreProperties.getProperty("RELEASE_STORE_PASSWORD") ?: ""
+            keyAlias = keystoreProperties.getProperty("RELEASE_KEY_ALIAS") ?: ""
+            keyPassword = keystoreProperties.getProperty("RELEASE_KEY_PASSWORD") ?: ""
+        }
     }
 
     buildTypes {
@@ -25,6 +45,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
