@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import android.content.Intent
 import android.os.Bundle
@@ -17,18 +17,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.pdfcreator.ui.theme.PDFCreatorTheme
-import com.example.pdfcreator.utils.LanguageHelper
-import com.example.pdfcreator.utils.LanguageAwareComposable
+import com.tsavvy.pdfcreator.ui.theme.PDFCreatorTheme
+import com.tsavvy.pdfcreator.utils.LanguageHelper
+import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 
 class SettingsActivity : BaseActivity() {
     
     private fun restartApp() {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        // إنشاء Intent لإعادة فتح MainActivity
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+        
+        // بدء MainActivity وإنهاء جميع الأنشطة السابقة
         startActivity(intent)
         finishAffinity()
-        System.exit(0)
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,10 +45,10 @@ class SettingsActivity : BaseActivity() {
                         onBackPressed = { finish() },
                     onLanguageChanged = { languageCode ->
                         LanguageHelper.setLanguage(this@SettingsActivity, languageCode)
-                        // تأخير قصير لضمان حفظ اللغة قبل إعادة التشغيل
+                        // تأخير قصير جداً لضمان حفظ اللغة قبل إعادة التشغيل
                         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                             restartApp()
-                        }, 500)
+                        }, 200)
                     }
                     )
                 }

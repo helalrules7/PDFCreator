@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pdfcreator"
+    namespace = "com.tsavvy.pdfcreator"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.pdfcreator"
+        applicationId = "com.tsavvy.pdfcreator"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,6 +65,7 @@ dependencies {
     
     // ViewModel and Compose integration
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

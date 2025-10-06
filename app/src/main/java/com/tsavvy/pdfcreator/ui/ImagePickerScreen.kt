@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui
+package com.tsavvy.pdfcreator.ui
 
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.example.pdfcreator.R
+import com.tsavvy.pdfcreator.R
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

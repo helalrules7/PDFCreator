@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui
+package com.tsavvy.pdfcreator.ui
 
 import android.content.Context
 import android.net.Uri
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import com.example.pdfcreator.R
+import com.tsavvy.pdfcreator.R
 
 data class PDFCreatorState(
     val selectedImages: List<Uri> = emptyList(),
@@ -25,7 +25,8 @@ data class PDFCreatorState(
     val pdfCreated: Boolean = false,
     val errorMessage: String? = null,
     val pdfPath: String? = null,
-    val pdfTitle: String = "PDF_${System.currentTimeMillis()}"
+    val pdfTitle: String = "PDF_${System.currentTimeMillis()}",
+    val isNewPDF: Boolean = false  // true = ملف جديد، false = ملف موجود
 )
 
 class PDFCreatorViewModel : ViewModel() {
@@ -49,7 +50,8 @@ class PDFCreatorViewModel : ViewModel() {
         state = state.copy(
             selectedImages = emptyList(),
             pdfCreated = false,
-            pdfPath = null
+            pdfPath = null,
+            isNewPDF = false
         )
     }
 
@@ -82,7 +84,8 @@ class PDFCreatorViewModel : ViewModel() {
                 state = state.copy(
                     isCreatingPDF = false,
                     pdfCreated = true,
-                    pdfPath = pdfPath
+                    pdfPath = pdfPath,
+                    isNewPDF = true  // هذا ملف جديد تم إنشاؤه
                 )
             } catch (e: Exception) {
                 e.printStackTrace() // إضافة log للخطأ
@@ -162,14 +165,13 @@ class PDFCreatorViewModel : ViewModel() {
     }
     
     fun updatePDFCreated(pdfPath: String, pdfTitle: String) {
-        android.util.Log.d("PDFCreatorViewModel", "Updating PDF state: path=$pdfPath, title=$pdfTitle")
         state = state.copy(
             pdfCreated = true,
             pdfPath = pdfPath,
             pdfTitle = pdfTitle,
             isCreatingPDF = false,
-            errorMessage = null
+            errorMessage = null,
+            isNewPDF = false  // هذا ملف موجود يتم عرضه
         )
-        android.util.Log.d("PDFCreatorViewModel", "State updated: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
     }
 }

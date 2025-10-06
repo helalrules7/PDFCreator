@@ -22,7 +22,7 @@
     <string name="menu_help">المساعدة</string>
     
     <!-- Settings -->
-    <string name="settings_title">الإعدادات</string>
+    <string name="settings_title">اللغة</string>
     <string name="language_settings">إعدادات اللغة</string>
     <string name="select_language">اختر اللغة</string>
     <string name="language_arabic">العربية</string>
@@ -112,6 +112,9 @@
     <string name="enter_new_title">أدخل عنوان جديد لملف PDF</string>
     <string name="save">حفظ</string>
     <string name="cancel">إلغاء</string>
+    <string name="auto_saving">جاري الحفظ التلقائي...</string>
+    <string name="unsaved_changes">تعديلات غير محفوظة</string>
+    <string name="error_auto_save">خطأ في الحفظ التلقائي</string>
     
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>

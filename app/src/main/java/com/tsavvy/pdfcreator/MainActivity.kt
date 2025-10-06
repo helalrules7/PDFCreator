@@ -1,6 +1,9 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,15 +22,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.example.pdfcreator.ui.PDFCreatorViewModel
-import com.example.pdfcreator.ui.PDFViewScreen
-import com.example.pdfcreator.ui.ImagePickerScreen
-import com.example.pdfcreator.ui.NavigationDrawer
-import com.example.pdfcreator.ui.theme.PDFCreatorTheme
-import com.example.pdfcreator.utils.LanguageAwareComposable
+import com.tsavvy.pdfcreator.ui.PDFCreatorViewModel
+import com.tsavvy.pdfcreator.ui.PDFViewScreen
+import com.tsavvy.pdfcreator.ui.ImagePickerScreen
+import com.tsavvy.pdfcreator.ui.NavigationDrawer
+import com.tsavvy.pdfcreator.ui.theme.PDFCreatorTheme
+import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 // Removed icons import - using text emoji instead
 import androidx.compose.material3.*
 
@@ -54,7 +58,7 @@ class MainActivity : BaseActivity() {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun PDFCreatorApp() {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val activity = context as? MainActivity
     val viewModel: PDFCreatorViewModel = viewModel()
     
@@ -70,31 +74,68 @@ fun PDFCreatorApp() {
     // Use pdfPath as key to trigger recomposition when it changes
     LaunchedEffect(pdfPath) {
         if (showPdfView && pdfPath != null && pdfTitle != null) {
-            android.util.Log.d("PDFCreator", "Updating PDF: path=$pdfPath, title=$pdfTitle")
             viewModel.updatePDFCreated(pdfPath, pdfTitle)
         }
     }
     
-    var showPDFScreen by remember { mutableStateOf(false) }
+    val showPDFScreenState = remember { mutableStateOf(false) }
+    var showPDFScreen by showPDFScreenState
     
     // Update showPDFScreen when intent changes
     LaunchedEffect(showPdfView, pdfPath) {
         if (showPdfView && pdfPath != null) {
-            android.util.Log.d("PDFCreator", "Showing PDF screen")
             showPDFScreen = true
         }
     }
     
     var showDrawer by remember { mutableStateOf(false) }
     
-    // تحديد الصلاحيات المطلوبة بناءً على إصدار الأندرويد
-    val permissions = remember {
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val deletedFilePath = intent?.getStringExtra("deleted_file_path")
+                val currentPdfPath = viewModel.state.pdfPath
+                
+                if (deletedFilePath != null && deletedFilePath == currentPdfPath) {
+                    viewModel.clearImages()
+                    showPDFScreenState.value = false
+                }
+            }
+        }
+        
+        val filter = IntentFilter("com.tsavvy.pdfcreator.PDF_DELETED")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            // أندرويد 13 وما فوق (API 33+)
-            listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
-            // أندرويد 12 وما دون (API 24-32)
-            listOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            context.registerReceiver(receiver, filter)
+        }
+        
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (_: Exception) {
+            }
+        }
+    }
+    
+    val permissions = remember {
+        when {
+            // Android 14+ (API 34+) - Support Selected Photos Access
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                listOf(
+                    android.Manifest.permission.READ_MEDIA_IMAGES,
+                    android.Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                )
+            }
+            // Android 13 (API 33) - Read media images
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU -> {
+                listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
+            }
+            // Android 12 and below - Read external storage
+            else -> {
+                listOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
     }
 
@@ -133,6 +174,10 @@ fun PDFCreatorApp() {
         NavigationDrawer(
             isOpen = showDrawer,
             onClose = { showDrawer = false },
+            onNavigateToHome = {
+                showPDFScreen = false
+                viewModel.clearImages()
+            },
             onNavigateToMyPDFs = {
                 val intent = Intent(context, MyPDFsActivity::class.java)
                 context.startActivity(intent)
@@ -176,7 +221,6 @@ fun PDFCreatorApp() {
                 Button(
                     onClick = { 
                         try {
-                            android.util.Log.d("PDFCreator", "Requesting permissions...")
                             permissionsState.launchMultiplePermissionRequest()
                         } catch (e: Exception) {
                             e.printStackTrace()

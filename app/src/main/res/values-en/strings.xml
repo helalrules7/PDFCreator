@@ -112,6 +112,9 @@
     <string name="enter_new_title">Enter new title for PDF file</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="auto_saving">Auto-saving...</string>
+    <string name="unsaved_changes">Unsaved changes</string>
+    <string name="error_auto_save">Error in auto-save</string>
     
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>
