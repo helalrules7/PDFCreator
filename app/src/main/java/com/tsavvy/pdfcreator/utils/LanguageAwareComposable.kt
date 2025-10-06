@@ -1,4 +1,4 @@
-package com.example.pdfcreator.utils
+package com.tsavvy.pdfcreator.utils
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext

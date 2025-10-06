@@ -1,4 +1,4 @@
-package com.example.pdfcreator.utils
+package com.tsavvy.pdfcreator.utils
 
 import android.content.Context
 import android.content.res.Configuration

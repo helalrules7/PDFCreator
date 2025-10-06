@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import android.content.Context
 import android.content.Intent
@@ -35,8 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pdfcreator.ui.theme.PDFCreatorTheme
-import com.example.pdfcreator.utils.LanguageAwareComposable
+import com.tsavvy.pdfcreator.ui.theme.PDFCreatorTheme
+import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.kernel.pdf.PdfWriter

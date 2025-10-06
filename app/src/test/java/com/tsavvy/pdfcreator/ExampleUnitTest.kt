@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import org.junit.Test
 

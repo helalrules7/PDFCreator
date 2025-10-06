@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,8 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pdfcreator.ui.theme.PDFCreatorTheme
-import com.example.pdfcreator.utils.LanguageAwareComposable
+import com.tsavvy.pdfcreator.ui.theme.PDFCreatorTheme
+import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 
 class AboutActivity : BaseActivity() {
     

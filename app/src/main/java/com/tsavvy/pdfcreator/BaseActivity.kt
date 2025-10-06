@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import android.content.Context
 import android.content.res.Configuration
@@ -7,7 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import com.example.pdfcreator.utils.LanguageHelper
+import com.tsavvy.pdfcreator.utils.LanguageHelper
 import java.util.*
 
 abstract class BaseActivity : ComponentActivity() {

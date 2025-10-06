@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui.theme
+package com.tsavvy.pdfcreator.ui.theme
 
 import android.app.Activity
 import android.os.Build

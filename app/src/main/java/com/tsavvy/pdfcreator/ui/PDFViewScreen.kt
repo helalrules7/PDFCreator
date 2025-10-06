@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui
+package com.tsavvy.pdfcreator.ui
 
 import android.content.Context
 import android.content.Intent
@@ -30,7 +30,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import com.example.pdfcreator.R
+import com.tsavvy.pdfcreator.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,16 +64,27 @@ fun PDFViewScreen(
         }
     }
     
-    // تحميل معاينة الصفحة الأولى
+    // التحقق من وجود الملف والعودة للشاشة الرئيسية إذا تم حذفه
     LaunchedEffect(state.pdfPath, reloadTrigger) {
         if (state.pdfPath != null) {
-            firstPagePreview = null // إعادة تعيين لإظهار مؤشر التحميل
-            firstPagePreview = loadFirstPagePreview(state.pdfPath)
+            val file = File(state.pdfPath)
+            if (!file.exists()) {
+                // الملف تم حذفه - نمسح الحالة ونعود للشاشة الرئيسية
+                viewModel.clearImages()
+                onNavigateBack()
+            }
         }
     }
     
-    // Log the current state
-    LaunchedEffect(state.pdfPath, state.pdfTitle) {
+    // تحميل معاينة الصفحة الأولى
+    LaunchedEffect(state.pdfPath, reloadTrigger) {
+        if (state.pdfPath != null) {
+            val file = File(state.pdfPath)
+            if (file.exists()) {
+                firstPagePreview = null // إعادة تعيين لإظهار مؤشر التحميل
+                firstPagePreview = loadFirstPagePreview(state.pdfPath)
+            }
+        }
     }
 
     Scaffold(
@@ -215,7 +226,7 @@ fun PDFViewScreen(
                     // 4. Edit
                     Button(
                         onClick = {
-                            val intent = Intent(context, com.example.pdfcreator.EditPDFActivity::class.java).apply {
+                            val intent = Intent(context, com.tsavvy.pdfcreator.EditPDFActivity::class.java).apply {
                                 putExtra("pdf_path", state.pdfPath)
                                 putExtra("pdf_title", state.pdfTitle)
                             }

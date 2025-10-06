@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui
+package com.tsavvy.pdfcreator.ui
 
 import android.content.Context
 import android.content.Intent
@@ -15,10 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.pdfcreator.MainActivity
-import com.example.pdfcreator.SettingsActivity
-import com.example.pdfcreator.AboutActivity
-import com.example.pdfcreator.R
+import com.tsavvy.pdfcreator.MainActivity
+import com.tsavvy.pdfcreator.SettingsActivity
+import com.tsavvy.pdfcreator.AboutActivity
+import com.tsavvy.pdfcreator.R
 
 data class DrawerItem(
     val title: String,

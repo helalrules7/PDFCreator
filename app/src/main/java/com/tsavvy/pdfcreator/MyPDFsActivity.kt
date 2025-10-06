@@ -1,4 +1,4 @@
-package com.example.pdfcreator
+package com.tsavvy.pdfcreator
 
 import android.content.Intent
 import android.graphics.Bitmap
@@ -28,8 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.pdfcreator.ui.theme.PDFCreatorTheme
-import com.example.pdfcreator.utils.LanguageAwareComposable
+import com.tsavvy.pdfcreator.ui.theme.PDFCreatorTheme
+import com.tsavvy.pdfcreator.utils.LanguageAwareComposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -253,11 +253,19 @@ fun MyPDFsScreen(
                     onClick = {
                         scope.launch {
                             try {
+                                val deletedFilePath = fileToDelete!!.file.absolutePath
                                 val deleted = withContext(Dispatchers.IO) {
                                     fileToDelete!!.file.delete()
                                 }
                                 if (deleted) {
                                     snackbarMessage = context.getString(R.string.pdf_deleted)
+                                    
+                                    // إرسال broadcast لإخبار MainActivity بالملف المحذوف
+                                    val intent = Intent("com.tsavvy.pdfcreator.PDF_DELETED").apply {
+                                        putExtra("deleted_file_path", deletedFilePath)
+                                    }
+                                    context.sendBroadcast(intent)
+                                    
                                     loadPDFFiles() // إعادة تحميل القائمة
                                 } else {
                                     snackbarMessage = context.getString(R.string.error_deleting_pdf)

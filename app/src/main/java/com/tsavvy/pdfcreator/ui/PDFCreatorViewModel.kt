@@ -1,4 +1,4 @@
-package com.example.pdfcreator.ui
+package com.tsavvy.pdfcreator.ui
 
 import android.content.Context
 import android.net.Uri
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import com.example.pdfcreator.R
+import com.tsavvy.pdfcreator.R
 
 data class PDFCreatorState(
     val selectedImages: List<Uri> = emptyList(),
