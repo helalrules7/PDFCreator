@@ -201,4 +201,9 @@
     <string name="color_green">أخضر</string>
     <string name="color_orange">برتقالي</string>
     <string name="color_purple">بنفسجي</string>
+    
+    <!-- Additional Strings -->
+    <string name="restart_required">إعادة التشغيل مطلوبة لتغيير اللغة</string>
+    <string name="version">الإصدار</string>
+    <string name="help_description">كيفية استخدام التطبيق</string>
 </resources>
