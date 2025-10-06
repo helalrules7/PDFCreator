@@ -70,7 +70,6 @@ fun PDFCreatorApp() {
     // Use pdfPath as key to trigger recomposition when it changes
     LaunchedEffect(pdfPath) {
         if (showPdfView && pdfPath != null && pdfTitle != null) {
-            android.util.Log.d("PDFCreator", "Updating PDF: path=$pdfPath, title=$pdfTitle")
             viewModel.updatePDFCreated(pdfPath, pdfTitle)
         }
     }
@@ -80,7 +79,6 @@ fun PDFCreatorApp() {
     // Update showPDFScreen when intent changes
     LaunchedEffect(showPdfView, pdfPath) {
         if (showPdfView && pdfPath != null) {
-            android.util.Log.d("PDFCreator", "Showing PDF screen")
             showPDFScreen = true
         }
     }
@@ -131,9 +129,7 @@ fun PDFCreatorApp() {
             isOpen = showDrawer,
             onClose = { showDrawer = false },
             onNavigateToHome = {
-                // إعادة تعيين الشاشة لإنشاء PDF جديد
                 showPDFScreen = false
-                // مسح جميع الصور المحددة
                 viewModel.clearImages()
             },
             onNavigateToMyPDFs = {
@@ -179,7 +175,6 @@ fun PDFCreatorApp() {
                 Button(
                     onClick = { 
                         try {
-                            android.util.Log.d("PDFCreator", "Requesting permissions...")
                             permissionsState.launchMultiplePermissionRequest()
                         } catch (e: Exception) {
                             e.printStackTrace()

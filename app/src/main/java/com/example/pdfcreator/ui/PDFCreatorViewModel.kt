@@ -165,7 +165,6 @@ class PDFCreatorViewModel : ViewModel() {
     }
     
     fun updatePDFCreated(pdfPath: String, pdfTitle: String) {
-        android.util.Log.d("PDFCreatorViewModel", "Updating PDF state: path=$pdfPath, title=$pdfTitle")
         state = state.copy(
             pdfCreated = true,
             pdfPath = pdfPath,
@@ -174,6 +173,5 @@ class PDFCreatorViewModel : ViewModel() {
             errorMessage = null,
             isNewPDF = false  // هذا ملف موجود يتم عرضه
         )
-        android.util.Log.d("PDFCreatorViewModel", "State updated: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
     }
 }

@@ -1,10 +1,14 @@
 package com.example.pdfcreator
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +21,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -291,6 +297,17 @@ private fun PDFFileCard(
 ) {
     val context = LocalContext.current
     
+    // حالة thumbnail الصفحة الأولى
+    var thumbnail by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoadingThumbnail by remember { mutableStateOf(true) }
+    
+    // تحميل thumbnail
+    LaunchedEffect(pdfInfo.file.absolutePath) {
+        isLoadingThumbnail = true
+        thumbnail = loadPDFThumbnail(pdfInfo.file)
+        isLoadingThumbnail = false
+    }
+    
     fun getString(@androidx.annotation.StringRes id: Int): String {
         return context.getString(id)
     }
@@ -308,7 +325,7 @@ private fun PDFFileCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // أيقونة PDF
+            // معاينة PDF أو أيقونة
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -316,10 +333,29 @@ private fun PDFFileCard(
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "📄",
-                    fontSize = 32.sp
-                )
+                when {
+                    isLoadingThumbnail -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    thumbnail != null -> {
+                        Image(
+                            bitmap = thumbnail!!.asImageBitmap(),
+                            contentDescription = "PDF Preview",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    else -> {
+                        Text(
+                            text = "📄",
+                            fontSize = 32.sp
+                        )
+                    }
+                }
             }
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -398,3 +434,50 @@ private fun PDFFileCard(
     }
 }
 
+/**
+ * تحميل معاينة للصفحة الأولى من ملف PDF
+ * @param file ملف PDF
+ * @return Bitmap للصفحة الأولى أو null في حالة الفشل
+ */
+private suspend fun loadPDFThumbnail(file: File): Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        if (!file.exists()) {
+            android.util.Log.e("MyPDFsActivity", "ملف PDF غير موجود: ${file.absolutePath}")
+            return@withContext null
+        }
+        
+        val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val pdfRenderer = PdfRenderer(fileDescriptor)
+        
+        if (pdfRenderer.pageCount == 0) {
+            android.util.Log.e("MyPDFsActivity", "ملف PDF فارغ")
+            pdfRenderer.close()
+            fileDescriptor.close()
+            return@withContext null
+        }
+        
+        // فتح الصفحة الأولى
+        val page = pdfRenderer.openPage(0)
+        
+        // إنشاء Bitmap بحجم مناسب للـ thumbnail
+        val scale = 56f / maxOf(page.width, page.height) * 2 // مضاعفة للدقة
+        val bitmap = Bitmap.createBitmap(
+            (page.width * scale).toInt(),
+            (page.height * scale).toInt(),
+            Bitmap.Config.ARGB_8888
+        )
+        
+        // رسم الصفحة على Bitmap
+        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        
+        // إغلاق الموارد
+        page.close()
+        pdfRenderer.close()
+        fileDescriptor.close()
+        
+        bitmap
+    } catch (e: Exception) {
+        android.util.Log.e("MyPDFsActivity", "خطأ في تحميل thumbnail: ${e.message}", e)
+        null
+    }
+}

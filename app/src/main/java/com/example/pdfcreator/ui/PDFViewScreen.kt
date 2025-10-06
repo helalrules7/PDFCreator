@@ -2,7 +2,11 @@ package com.example.pdfcreator.ui
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.ParcelFileDescriptor
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,11 +17,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import com.example.pdfcreator.R
 
@@ -29,10 +40,40 @@ fun PDFViewScreen(
 ) {
     val context = LocalContext.current
     val state = viewModel.state
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
+    // حالة معاينة الصفحة الأولى
+    var firstPagePreview by remember { mutableStateOf<Bitmap?>(null) }
+    
+    // متغير للتحكم في إعادة التحميل عند العودة للشاشة
+    var reloadTrigger by remember { mutableStateOf(0) }
+    
+    // مراقبة lifecycle لإعادة تحميل الـ thumbnail عند العودة للشاشة
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // عند العودة للشاشة، نزيد counter لتحفيز إعادة التحميل
+                reloadTrigger++
+            }
+        }
+        
+        lifecycleOwner.lifecycle.addObserver(observer)
+        
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    
+    // تحميل معاينة الصفحة الأولى
+    LaunchedEffect(state.pdfPath, reloadTrigger) {
+        if (state.pdfPath != null) {
+            firstPagePreview = null // إعادة تعيين لإظهار مؤشر التحميل
+            firstPagePreview = loadFirstPagePreview(state.pdfPath)
+        }
+    }
     
     // Log the current state
     LaunchedEffect(state.pdfPath, state.pdfTitle) {
-        android.util.Log.d("PDFViewScreen", "Current state: pdfPath=${state.pdfPath}, pdfTitle=${state.pdfTitle}")
     }
 
     Scaffold(
@@ -59,10 +100,11 @@ fun PDFViewScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (state.pdfCreated && state.pdfPath != null) {
-                // أيقونة نجاح
+                // معاينة الصفحة الأولى أو أيقونة نجاح
                 Card(
                     modifier = Modifier
-                        .size(120.dp)
+                        .width(200.dp)
+                        .height(280.dp)
                         .padding(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -76,11 +118,31 @@ fun PDFViewScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "✓",
-                            fontSize = 48.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        if (firstPagePreview != null) {
+                            // عرض معاينة الصفحة الأولى
+                            Image(
+                                bitmap = firstPagePreview!!.asImageBitmap(),
+                                contentDescription = "PDF Preview",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            // عرض أيقونة تحميل أو نجاح
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "جاري التحميل...",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -114,9 +176,19 @@ fun PDFViewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // 1. Open
                     Button(
                         onClick = {
-                            android.util.Log.d("PDFCreator", "Share button clicked, PDF path: ${state.pdfPath}")
+                            openPDF(context, state.pdfPath ?: "")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(getString(R.string.open_pdf))
+                    }
+
+                    // 2. Share
+                    Button(
+                        onClick = {
                             sharePDF(context, state.pdfPath ?: "")
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -130,9 +202,9 @@ fun PDFViewScreen(
                         Text(getString(R.string.share_pdf))
                     }
 
+                    // 3. Print
                     Button(
                         onClick = {
-                            android.util.Log.d("PDFCreator", "Print button clicked, PDF path: ${state.pdfPath}")
                             printPDF(context, state.pdfPath ?: "")
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -140,17 +212,7 @@ fun PDFViewScreen(
                         Text("🖨️ ${getString(R.string.print_pdf)}")
                     }
 
-                    OutlinedButton(
-                        onClick = {
-                            android.util.Log.d("PDFCreator", "Open button clicked, PDF path: ${state.pdfPath}")
-                            openPDF(context, state.pdfPath ?: "")
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(getString(R.string.open_pdf))
-                    }
-
-                    // Edit PDF Button
+                    // 4. Edit
                     Button(
                         onClick = {
                             val intent = Intent(context, com.example.pdfcreator.EditPDFActivity::class.java).apply {
@@ -167,6 +229,7 @@ fun PDFViewScreen(
                         Text("✏️ ${getString(R.string.edit_pdf)}")
                     }
 
+                    // 5. Create New
                     OutlinedButton(
                         onClick = {
                             viewModel.clearImages()
@@ -201,10 +264,8 @@ fun PDFViewScreen(
 }
 
 private fun sharePDF(context: Context, pdfPath: String) {
-    android.util.Log.d("PDFCreator", "sharePDF called with path: $pdfPath")
     try {
         val file = File(pdfPath)
-        android.util.Log.d("PDFCreator", "File exists: ${file.exists()}, size: ${file.length()}")
         if (file.exists()) {
             // استخدام FileProvider للمشاركة
             val uri = androidx.core.content.FileProvider.getUriForFile(
@@ -212,7 +273,6 @@ private fun sharePDF(context: Context, pdfPath: String) {
                 "${context.packageName}.fileprovider",
                 file
             )
-            android.util.Log.d("PDFCreator", "URI created: $uri")
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
@@ -220,12 +280,10 @@ private fun sharePDF(context: Context, pdfPath: String) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            android.util.Log.d("PDFCreator", "Starting share intent")
             val chooser = Intent.createChooser(intent, context.getString(R.string.share_pdf_chooser))
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
         } else {
-            android.util.Log.e("PDFCreator", "File does not exist: $pdfPath")
         }
     } catch (e: Exception) {
         e.printStackTrace()
@@ -275,7 +333,6 @@ private fun printPDF(context: Context, pdfPath: String) {
                     
                     // حساب عدد صفحات PDF
                     val pageCount = getPDFPageCount(file)
-                    android.util.Log.d("PDFCreator", "PDF has $pageCount pages")
                     
                     // إنشاء PrintDocumentAdapter محسن
                     val printAdapter = object : android.print.PrintDocumentAdapter() {
@@ -349,6 +406,54 @@ private fun printPDF(context: Context, pdfPath: String) {
     } catch (e: Exception) {
         e.printStackTrace()
         android.util.Log.e("PDFCreator", "Error printing PDF: ${e.message}")
+    }
+}
+
+/**
+ * تحميل معاينة للصفحة الأولى من ملف PDF
+ * @param pdfPath مسار ملف PDF
+ * @return Bitmap للصفحة الأولى أو null في حالة الفشل
+ */
+private suspend fun loadFirstPagePreview(pdfPath: String): Bitmap? = withContext(Dispatchers.IO) {
+    try {
+        val file = File(pdfPath)
+        if (!file.exists()) {
+            android.util.Log.e("PDFViewScreen", "ملف PDF غير موجود: $pdfPath")
+            return@withContext null
+        }
+        
+        val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+        val pdfRenderer = PdfRenderer(fileDescriptor)
+        
+        if (pdfRenderer.pageCount == 0) {
+            android.util.Log.e("PDFViewScreen", "ملف PDF فارغ")
+            pdfRenderer.close()
+            fileDescriptor.close()
+            return@withContext null
+        }
+        
+        // فتح الصفحة الأولى
+        val page = pdfRenderer.openPage(0)
+        
+        // إنشاء Bitmap بالحجم المناسب
+        val bitmap = Bitmap.createBitmap(
+            page.width * 2, // مضاعفة الدقة للحصول على جودة أفضل
+            page.height * 2,
+            Bitmap.Config.ARGB_8888
+        )
+        
+        // رسم الصفحة على Bitmap
+        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+        
+        // إغلاق الموارد
+        page.close()
+        pdfRenderer.close()
+        fileDescriptor.close()
+        
+        bitmap
+    } catch (e: Exception) {
+        android.util.Log.e("PDFViewScreen", "خطأ في تحميل معاينة PDF: ${e.message}", e)
+        null
     }
 }
 

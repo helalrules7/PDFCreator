@@ -143,13 +143,10 @@ fun EditPDFScreen(
     LaunchedEffect(reloadTrigger) {
         if (reloadTrigger > 0 && needsReload) {
             try {
-                android.util.Log.d("EditPDF", "🔄 إعادة تحميل الصفحات...")
                 val reloadedPages = loadPDFPages(context, pdfPath)
                 pages = reloadedPages
-                android.util.Log.d("EditPDF", "✅ تم إعادة تحميل ${reloadedPages.size} صفحة")
                 needsReload = false
             } catch (e: Exception) {
-                android.util.Log.e("EditPDF", "❌ فشل إعادة التحميل: ${e.message}")
                 e.printStackTrace()
                 needsReload = false
             }
@@ -184,14 +181,11 @@ fun EditPDFScreen(
                     if (!isLoading && pages.isNotEmpty()) {
                         IconButton(
                             onClick = {
-                                android.util.Log.d("EditPDF", "🔘 تم الضغط على زر الحفظ اليدوي")
                                 isSaving = true
                                 scope.launch {
                                     try {
-                                        android.util.Log.d("EditPDF", "💾 بدء الحفظ اليدوي...")
                                         savePDFToOriginalPath(context, pdfPath, pages)
                                         hasUnsavedChanges = false
-                                        android.util.Log.d("EditPDF", "✅ تم الحفظ اليدوي بنجاح")
                                         
                                         isSaving = false
                                         
@@ -318,29 +312,22 @@ private fun PDFPagesListView(
                 isDragging = draggedIndex == index,
                 onRotate = {
                     // تدوير الصفحة بمقدار 90 درجة
-                    android.util.Log.d("EditPDF", "🔄 تدوير الصفحة في الموضع $index")
                     val newPages = pages.toMutableList()
                     val oldRotation = newPages[index].rotation
                     val newRotation = (oldRotation + 90) % 360
-                    android.util.Log.d("EditPDF", "   الصفحة رقم ${newPages[index].pageNumber}: $oldRotation° → $newRotation°")
                     newPages[index] = newPages[index].copy(rotation = newRotation)
-                    android.util.Log.d("EditPDF", "   الترتيب الجديد:")
                     newPages.forEachIndexed { i, p -> 
-                        android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
                     }
                     onPagesChanged(newPages)
                 },
                 onMoveUp = {
                     // نقل الصفحة للأعلى
                     if (index > 0) {
-                        android.util.Log.d("EditPDF", "⬆️ نقل الصفحة من الموضع $index إلى ${index - 1}")
                         val newPages = pages.toMutableList()
                         val temp = newPages[index]
                         newPages[index] = newPages[index - 1]
                         newPages[index - 1] = temp
-                        android.util.Log.d("EditPDF", "   الترتيب الجديد:")
                         newPages.forEachIndexed { i, p -> 
-                            android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
                         }
                         onPagesChanged(newPages)
                     }
@@ -348,14 +335,11 @@ private fun PDFPagesListView(
                 onMoveDown = {
                     // نقل الصفحة للأسفل
                     if (index < pages.size - 1) {
-                        android.util.Log.d("EditPDF", "⬇️ نقل الصفحة من الموضع $index إلى ${index + 1}")
                         val newPages = pages.toMutableList()
                         val temp = newPages[index]
                         newPages[index] = newPages[index + 1]
                         newPages[index + 1] = temp
-                        android.util.Log.d("EditPDF", "   الترتيب الجديد:")
                         newPages.forEachIndexed { i, p -> 
-                            android.util.Log.d("EditPDF", "   [$i] صفحة ${p.pageNumber} - دوران ${p.rotation}°")
                         }
                         onPagesChanged(newPages)
                     }
@@ -671,8 +655,6 @@ private suspend fun loadPDFPages(
     context: Context, 
     pdfPath: String
 ): List<PDFPageData> = withContext(Dispatchers.IO) {
-    android.util.Log.d("EditPDF", "===== بدء تحميل صفحات PDF =====")
-    android.util.Log.d("EditPDF", "المسار: $pdfPath")
     
     val pages = mutableListOf<PDFPageData>()
     val file = File(pdfPath)
@@ -683,13 +665,11 @@ private suspend fun loadPDFPages(
         val pdfDoc = PdfDocument(pdfReader)
         val rotations = mutableListOf<Int>()
         
-        android.util.Log.d("EditPDF", "عدد الصفحات في PDF: ${pdfDoc.numberOfPages}")
         
         for (i in 1..pdfDoc.numberOfPages) {
             val page = pdfDoc.getPage(i)
             val rotation = page.rotation
             rotations.add(rotation)
-            android.util.Log.d("EditPDF", "الصفحة $i - دوران موجود: $rotation°")
         }
         
         pdfDoc.close()
@@ -702,7 +682,6 @@ private suspend fun loadPDFPages(
         )
         val pdfRenderer = PdfRenderer(fileDescriptor)
         
-        android.util.Log.d("EditPDF", "بدء عرض الصفحات...")
         
         for (i in 0 until pdfRenderer.pageCount) {
             val page = pdfRenderer.openPage(i)
@@ -733,7 +712,6 @@ private suspend fun loadPDFPages(
                 )
             )
             
-            android.util.Log.d("EditPDF", "تم تحميل الصفحة: رقم=$pageNumber, دوران=$pageRotation°")
             
             page.close()
         }
@@ -741,9 +719,7 @@ private suspend fun loadPDFPages(
         pdfRenderer.close()
         fileDescriptor.close()
         
-        android.util.Log.d("EditPDF", "===== تم تحميل ${pages.size} صفحة بنجاح =====")
     } catch (e: Exception) {
-        android.util.Log.e("EditPDF", "❌ خطأ في تحميل الصفحات: ${e.message}")
         e.printStackTrace()
         throw e
     }
@@ -802,29 +778,21 @@ private suspend fun savePDFToOriginalPath(
     val originalFile = File(originalPath)
     val tempFile = File(originalFile.parent, "${originalFile.name}.tmp")
     
-    android.util.Log.d("EditPDF", "===== بدء عملية الحفظ =====")
-    android.util.Log.d("EditPDF", "المسار الأصلي: $originalPath")
-    android.util.Log.d("EditPDF", "عدد الصفحات: ${pages.size}")
     pages.forEachIndexed { index, page ->
-        android.util.Log.d("EditPDF", "الصفحة $index: رقم=${page.pageNumber}, دوران=${page.rotation}°")
     }
     
     try {
         // الخطوة 1: إنشاء PDF مؤقت جديد مع التعديلات
-        android.util.Log.d("EditPDF", "الخطوة 1: إنشاء ملف مؤقت...")
         createModifiedPDF(originalPath, tempFile.absolutePath, pages)
         
         // الخطوة 2: حذف الملف الأصلي
-        android.util.Log.d("EditPDF", "الخطوة 2: حذف الملف الأصلي...")
         if (originalFile.exists()) {
             originalFile.delete()
         }
         
         // الخطوة 3: إعادة تسمية الملف المؤقت ليحل محل الأصلي
-        android.util.Log.d("EditPDF", "الخطوة 3: إعادة تسمية الملف المؤقت...")
         tempFile.renameTo(originalFile)
         
-        android.util.Log.d("EditPDF", "===== تم الحفظ بنجاح =====")
     } catch (e: Exception) {
         android.util.Log.e("EditPDF", "❌ خطأ في الحفظ: ${e.message}")
         e.printStackTrace()
@@ -848,35 +816,23 @@ private fun createModifiedPDF(
     destPath: String,
     pages: List<PDFPageData>
 ) {
-    android.util.Log.d("EditPDF", ">> createModifiedPDF: بدء إنشاء PDF معدل")
     
-    // فتح الملف الأصلي للقراءة
     val reader = PdfReader(FileInputStream(sourcePath))
     val sourcePdf = PdfDocument(reader)
     
     val totalPagesInSource = sourcePdf.numberOfPages
-    android.util.Log.d("EditPDF", ">> عدد الصفحات في PDF الأصلي: $totalPagesInSource")
     
-    // إنشاء الملف الجديد للكتابة
     val writer = PdfWriter(FileOutputStream(destPath))
     val destPdf = PdfDocument(writer)
     
     try {
-        // نسخ الصفحات بالترتيب الجديد
         pages.forEachIndexed { index, pageData ->
-            android.util.Log.d("EditPDF", ">> معالجة الصفحة $index:")
-            android.util.Log.d("EditPDF", "   - رقم الصفحة المطلوب: ${pageData.pageNumber}")
-            android.util.Log.d("EditPDF", "   - الدوران: ${pageData.rotation}°")
             
-            // التحقق من أن رقم الصفحة ضمن النطاق
             if (pageData.pageNumber < 1 || pageData.pageNumber > totalPagesInSource) {
                 val errorMsg = "رقم الصفحة ${pageData.pageNumber} خارج النطاق! (النطاق: 1-$totalPagesInSource)"
-                android.util.Log.e("EditPDF", "❌ $errorMsg")
                 throw IllegalArgumentException(errorMsg)
             }
             
-            // نسخ الصفحة باستخدام copyPagesTo (الطريقة الموصى بها)
-            android.util.Log.d("EditPDF", "   - جاري نسخ الصفحة...")
             
             sourcePdf.copyPagesTo(
                 pageData.pageNumber,
@@ -889,24 +845,18 @@ private fun createModifiedPDF(
             
             // قراءة التدوير الحالي للصفحة المنسوخة
             val currentRotation = copiedPage.rotation
-            android.util.Log.d("EditPDF", "   - التدوير بعد النسخ: $currentRotation°")
-            android.util.Log.d("EditPDF", "   - التدوير المطلوب: ${pageData.rotation}°")
             
             // تطبيق التدوير المطلوب مباشرة (setRotation يستبدل القيمة القديمة)
             copiedPage.setRotation(pageData.rotation)
             
-            android.util.Log.d("EditPDF", "   - التدوير النهائي: ${copiedPage.rotation}°")
-            android.util.Log.d("EditPDF", "   ✓ تم معالجة الصفحة بنجاح")
         }
         
-        android.util.Log.d("EditPDF", ">> ✓ تم إنشاء PDF معدل بنجاح (${destPdf.numberOfPages} صفحة)")
     } catch (e: Exception) {
         android.util.Log.e("EditPDF", ">> ❌ خطأ في createModifiedPDF: ${e.message}")
         e.printStackTrace()
         throw e
     } finally {
         // إغلاق المستندات
-        android.util.Log.d("EditPDF", ">> إغلاق المستندات...")
         destPdf.close()
         sourcePdf.close()
         writer.close()
