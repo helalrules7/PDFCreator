@@ -2,7 +2,6 @@ package com.example.pdfcreator
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,7 +21,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.example.pdfcreator.ui.PDFCreatorViewModel
 import com.example.pdfcreator.ui.PDFViewScreen
@@ -89,12 +87,20 @@ fun PDFCreatorApp() {
     
     var showDrawer by remember { mutableStateOf(false) }
     
+    // تحديد الصلاحيات المطلوبة بناءً على إصدار الأندرويد
+    val permissions = remember {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            // أندرويد 13 وما فوق (API 33+)
+            listOf(android.Manifest.permission.READ_MEDIA_IMAGES)
+        } else {
+            // أندرويد 12 وما دون (API 24-32)
+            listOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
 
     // طلب الصلاحيات المطلوبة
     val permissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            android.Manifest.permission.READ_MEDIA_IMAGES
-        )
+        permissions = permissions
     )
 
     // طلب الصلاحيات عند بدء التطبيق (مرة مرة فقط)
@@ -150,19 +156,20 @@ fun PDFCreatorApp() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(paddingValues)
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                     Text(
                         text = "🔒 H PDF Creator",
-                        style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center
                     )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "هذا التطبيق يحتاج صلاحية الوصول للصور لتحويلها إلى PDF\n\nاضغط على الزر أدناه لمنح الصلاحيات",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -182,11 +189,11 @@ fun PDFCreatorApp() {
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
-                
-                androidx.compose.material3.OutlinedButton(
+
+                OutlinedButton(
                     onClick = { 
                         try {
-                            val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                 data = android.net.Uri.fromParts("package", context.packageName, null)
                             }
                             context.startActivity(intent)
