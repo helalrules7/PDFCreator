@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.tsavvy.pdfcreator"
-    android:versionCode="1">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions for file access and camera -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
