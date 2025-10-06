@@ -15,7 +15,7 @@ android {
         applicationId = "com.tsavvy.pdfcreator"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
+        versionCode = 12000 // Format: MAJOR * 10000 + MINOR * 100 + PATCH (1.2.0 = 12000)
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
