@@ -236,14 +236,12 @@ None currently. [Report an issue](https://github.com/helalrules7/PDFCreator/issu
 ### v1.3.0 (Next Release)
 - [ ] Merge multiple PDFs into one
 - [ ] Split PDF into multiple files
-- [ ] Dark theme option
 - [ ] PDF compression
 
 ### v1.4.0 (Future)
 - [ ] Add text annotations to PDFs
 - [ ] Password protection for PDFs
 - [ ] Cloud backup integration (Google Drive, Dropbox)
-- [ ] Advanced watermark patterns
 
 ### v2.0.0 (Long-term)
 - [ ] OCR (Optical Character Recognition)
