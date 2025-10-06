@@ -40,12 +40,19 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            
+            // Enable R8 full mode for better optimization
+            // Generate mapping file for crash reports
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
     compileOptions {
