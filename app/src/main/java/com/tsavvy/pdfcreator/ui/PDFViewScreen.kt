@@ -216,16 +216,7 @@ fun PDFViewScreen(
                     // 3. Print
                     Button(
                         onClick = {
-                            val activity = context as? android.app.Activity
-                            if (activity != null) {
-                                printPDF(activity, state.pdfPath ?: "")
-                            } else {
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Cannot print: Activity not available",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                            printPDF(context, state.pdfPath ?: "")
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -335,101 +326,146 @@ private fun openPDF(context: Context, pdfPath: String) {
     }
 }
 
-private fun printPDF(activity: android.app.Activity, pdfPath: String) {
+private fun printPDF(context: Context, pdfPath: String) {
     try {
         val file = File(pdfPath)
         if (!file.exists()) {
-            android.util.Log.e("PDFCreator", "File not found: $pdfPath")
             android.widget.Toast.makeText(
-                activity,
-                "File not found",
+                context,
+                "❌ File not found",
                 android.widget.Toast.LENGTH_SHORT
             ).show()
+            android.util.Log.e("PDFCreator", "Print failed: File not found at $pdfPath")
             return
         }
         
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            val printManager = activity.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
-            if (printManager == null) {
-                android.util.Log.e("PDFCreator", "PrintManager not available")
-                android.widget.Toast.makeText(
-                    activity,
-                    "Print service not available",
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
-                return
-            }
-            
-            val jobName = "${activity.getString(R.string.app_name)}_${file.nameWithoutExtension}"
-            
-            // استخدام PrintDocumentAdapter مع Activity context
-            val printAdapter = object : android.print.PrintDocumentAdapter() {
-                override fun onLayout(
-                    oldAttributes: android.print.PrintAttributes?,
-                    newAttributes: android.print.PrintAttributes?,
-                    cancellationSignal: android.os.CancellationSignal?,
-                    callback: android.print.PrintDocumentAdapter.LayoutResultCallback?,
-                    extras: android.os.Bundle?
-                ) {
-                    if (cancellationSignal?.isCanceled == true) {
-                        callback?.onLayoutCancelled()
-                        return
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        
+        // محاولة استخدام PrintManager للطباعة المباشرة (Android 4.4+)
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+                android.util.Log.d("PDFCreator", "Attempting to use PrintManager for direct printing")
+                
+                val printManager = context.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
+                val jobName = "PDF_${System.currentTimeMillis()}"
+                
+                // حساب عدد صفحات PDF
+                val pageCount = getPDFPageCount(file)
+                android.util.Log.d("PDFCreator", "PDF has $pageCount pages")
+                
+                // إنشاء PrintDocumentAdapter محسن
+                val printAdapter = object : android.print.PrintDocumentAdapter() {
+                    override fun onWrite(
+                        pages: Array<out android.print.PageRange>?,
+                        destination: android.os.ParcelFileDescriptor?,
+                        cancellationSignal: android.os.CancellationSignal?,
+                        callback: android.print.PrintDocumentAdapter.WriteResultCallback?
+                    ) {
+                        try {
+                            android.util.Log.d("PDFCreator", "onWrite called - writing PDF to print destination")
+                            val input = file.inputStream()
+                            val output = android.os.ParcelFileDescriptor.AutoCloseOutputStream(destination)
+                            input.copyTo(output)
+                            input.close()
+                            output.close()
+                            
+                            // إرجاع جميع الصفحات المطلوبة
+                            val pageRanges = pages ?: arrayOf(android.print.PageRange.ALL_PAGES)
+                            callback?.onWriteFinished(pageRanges)
+                            android.util.Log.d("PDFCreator", "PDF written successfully to print spooler")
+                        } catch (e: Exception) {
+                            android.util.Log.e("PDFCreator", "Error writing PDF for printing: ${e.message}", e)
+                            callback?.onWriteFailed(e.message)
+                        }
                     }
                     
-                    try {
-                        val pageCount = getPDFPageCount(file)
+                    override fun onLayout(
+                        oldAttributes: android.print.PrintAttributes?,
+                        newAttributes: android.print.PrintAttributes?,
+                        cancellationSignal: android.os.CancellationSignal?,
+                        callback: android.print.PrintDocumentAdapter.LayoutResultCallback?,
+                        extras: android.os.Bundle?
+                    ) {
+                        if (cancellationSignal?.isCanceled == true) {
+                            android.util.Log.d("PDFCreator", "Print layout cancelled")
+                            callback?.onLayoutCancelled()
+                            return
+                        }
+                        
+                        android.util.Log.d("PDFCreator", "onLayout called - setting up print document info")
                         val info = android.print.PrintDocumentInfo.Builder(jobName)
                             .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                             .setPageCount(pageCount)
                             .build()
                         callback?.onLayoutFinished(info, true)
-                    } catch (e: Exception) {
-                        android.util.Log.e("PDFCreator", "Error in onLayout: ${e.message}")
-                        callback?.onLayoutFailed(e.message)
                     }
                 }
                 
-                override fun onWrite(
-                    pages: Array<out android.print.PageRange>?,
-                    destination: android.os.ParcelFileDescriptor?,
-                    cancellationSignal: android.os.CancellationSignal?,
-                    callback: android.print.PrintDocumentAdapter.WriteResultCallback?
-                ) {
-                    if (cancellationSignal?.isCanceled == true) {
-                        callback?.onWriteCancelled()
-                        return
-                    }
-                    
-                    try {
-                        file.inputStream().use { input ->
-                            android.os.ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                        callback?.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
-                    } catch (e: Exception) {
-                        android.util.Log.e("PDFCreator", "Error in onWrite: ${e.message}", e)
-                        callback?.onWriteFailed(e.message)
-                    }
+                printManager.print(jobName, printAdapter, null)
+                android.util.Log.d("PDFCreator", "✅ Print dialog opened successfully")
+                
+            } else {
+                // للأنظمة الأقدم من Android 4.4
+                android.util.Log.w("PDFCreator", "Android version < KitKat, falling back to share")
+                android.widget.Toast.makeText(
+                    context,
+                    "⚠️ Direct printing requires Android 4.4+\nOpening share menu instead...",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                
+                val printIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
+                val printChooser = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser))
+                context.startActivity(printChooser)
             }
+        } catch (e: Exception) {
+            android.util.Log.e("PDFCreator", "❌ PrintManager failed: ${e.message}", e)
+            android.util.Log.e("PDFCreator", "Exception type: ${e.javaClass.simpleName}")
             
-            // فتح نافذة الطباعة - يحتاج Activity context
-            printManager.print(jobName, printAdapter, null)
-            android.util.Log.d("PDFCreator", "Print dialog opened successfully")
-        } else {
-            // للنسخ الأقدم من Android (قبل KitKat)
+            // عرض رسالة للمستخدم توضح المشكلة
             android.widget.Toast.makeText(
-                activity,
-                "Printing requires Android 4.4 or higher",
-                android.widget.Toast.LENGTH_SHORT
+                context,
+                "⚠️ Print service unavailable\n${e.message ?: "Unknown error"}\n\nOpening share menu instead...",
+                android.widget.Toast.LENGTH_LONG
             ).show()
+            
+            // الانتظار قليلاً لعرض الرسالة
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                try {
+                    // في حالة فشل الطباعة المباشرة، استخدم مشاركة عادية
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    val chooser = Intent.createChooser(shareIntent, context.getString(R.string.print_pdf_chooser_alt))
+                    context.startActivity(chooser)
+                    android.util.Log.d("PDFCreator", "Fallback: Share dialog opened")
+                } catch (shareError: Exception) {
+                    android.util.Log.e("PDFCreator", "Even share failed: ${shareError.message}", shareError)
+                    android.widget.Toast.makeText(
+                        context,
+                        "❌ Unable to open share menu: ${shareError.message}",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }, 1500) // انتظار 1.5 ثانية لقراءة الرسالة
         }
     } catch (e: Exception) {
-        android.util.Log.e("PDFCreator", "Error printing PDF: ${e.message}", e)
+        e.printStackTrace()
+        android.util.Log.e("PDFCreator", "❌ Critical error in printPDF: ${e.message}", e)
         android.widget.Toast.makeText(
-            activity,
-            "Error printing: ${e.message}",
+            context,
+            "❌ Error: ${e.message}",
             android.widget.Toast.LENGTH_SHORT
         ).show()
     }
