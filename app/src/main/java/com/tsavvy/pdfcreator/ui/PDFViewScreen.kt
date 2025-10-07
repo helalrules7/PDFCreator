@@ -216,7 +216,16 @@ fun PDFViewScreen(
                     // 3. Print
                     Button(
                         onClick = {
-                            printPDF(context, state.pdfPath ?: "")
+                            val activity = context as? android.app.Activity
+                            if (activity != null) {
+                                printPDF(activity, state.pdfPath ?: "")
+                            } else {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Cannot print: Activity not available",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -326,24 +335,34 @@ private fun openPDF(context: Context, pdfPath: String) {
     }
 }
 
-private fun printPDF(context: Context, pdfPath: String) {
+private fun printPDF(activity: android.app.Activity, pdfPath: String) {
     try {
         val file = File(pdfPath)
         if (!file.exists()) {
             android.util.Log.e("PDFCreator", "File not found: $pdfPath")
+            android.widget.Toast.makeText(
+                activity,
+                "File not found",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
             return
         }
         
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            val printManager = context.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
+            val printManager = activity.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
             if (printManager == null) {
                 android.util.Log.e("PDFCreator", "PrintManager not available")
+                android.widget.Toast.makeText(
+                    activity,
+                    "Print service not available",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
                 return
             }
             
-            val jobName = "${context.getString(R.string.app_name)}_${file.nameWithoutExtension}"
+            val jobName = "${activity.getString(R.string.app_name)}_${file.nameWithoutExtension}"
             
-            // استخدام PdfDocument.Page لإنشاء PrintDocumentAdapter
+            // استخدام PrintDocumentAdapter مع Activity context
             val printAdapter = object : android.print.PrintDocumentAdapter() {
                 override fun onLayout(
                     oldAttributes: android.print.PrintAttributes?,
@@ -395,13 +414,13 @@ private fun printPDF(context: Context, pdfPath: String) {
                 }
             }
             
-            // فتح نافذة الطباعة
+            // فتح نافذة الطباعة - يحتاج Activity context
             printManager.print(jobName, printAdapter, null)
             android.util.Log.d("PDFCreator", "Print dialog opened successfully")
         } else {
             // للنسخ الأقدم من Android (قبل KitKat)
             android.widget.Toast.makeText(
-                context,
+                activity,
                 "Printing requires Android 4.4 or higher",
                 android.widget.Toast.LENGTH_SHORT
             ).show()
@@ -409,8 +428,8 @@ private fun printPDF(context: Context, pdfPath: String) {
     } catch (e: Exception) {
         android.util.Log.e("PDFCreator", "Error printing PDF: ${e.message}", e)
         android.widget.Toast.makeText(
-            context,
-            "Error: ${e.message}",
+            activity,
+            "Error printing: ${e.message}",
             android.widget.Toast.LENGTH_SHORT
         ).show()
     }
