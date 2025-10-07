@@ -31,6 +31,47 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.tsavvy.pdfcreator.R
+import android.app.Activity
+import android.view.ContextThemeWrapper
+
+/**
+ * Extension function للحصول على Activity من Context
+ * هذا ضروري لأن PrintManager.print() يحتاج Activity وليس مجرد Context
+ */
+private fun Context.findActivity(): Activity? {
+    var context = this
+    while (context is ContextThemeWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return if (context is Activity) context else null
+}
+
+/**
+ * دالة مساعدة لفتح share dialog
+ */
+private fun openShareDialog(context: Context, uri: Uri) {
+    try {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val chooser = Intent.createChooser(shareIntent, context.getString(R.string.print_pdf_chooser_alt))
+        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(chooser)
+        android.util.Log.d("PDFCreator", "Share dialog opened successfully")
+    } catch (e: Exception) {
+        android.util.Log.e("PDFCreator", "Failed to open share dialog: ${e.message}", e)
+        android.widget.Toast.makeText(
+            context,
+            "❌ Unable to open share menu: ${e.message}",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -350,7 +391,26 @@ private fun printPDF(context: Context, pdfPath: String) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
                 android.util.Log.d("PDFCreator", "Attempting to use PrintManager for direct printing")
                 
-                val printManager = context.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
+                // الحصول على Activity من Context
+                val activity = context.findActivity()
+                if (activity == null) {
+                    android.util.Log.e("PDFCreator", "❌ Cannot find Activity from context")
+                    android.widget.Toast.makeText(
+                        context,
+                        "⚠️ Print requires Activity context\nOpening share menu instead...",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    
+                    // fallback to share
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        openShareDialog(context, uri)
+                    }, 1500)
+                    return
+                }
+                
+                android.util.Log.d("PDFCreator", "✅ Activity found: ${activity.javaClass.simpleName}")
+                
+                val printManager = activity.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
                 val jobName = "PDF_${System.currentTimeMillis()}"
                 
                 // حساب عدد صفحات PDF
@@ -417,14 +477,9 @@ private fun printPDF(context: Context, pdfPath: String) {
                     android.widget.Toast.LENGTH_LONG
                 ).show()
                 
-                val printIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                val printChooser = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser))
-                context.startActivity(printChooser)
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    openShareDialog(context, uri)
+                }, 1500)
             }
         } catch (e: Exception) {
             android.util.Log.e("PDFCreator", "❌ PrintManager failed: ${e.message}", e)
@@ -437,28 +492,10 @@ private fun printPDF(context: Context, pdfPath: String) {
                 android.widget.Toast.LENGTH_LONG
             ).show()
             
-            // الانتظار قليلاً لعرض الرسالة
+            // الانتظار قليلاً لعرض الرسالة ثم فتح share dialog
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                try {
-                    // في حالة فشل الطباعة المباشرة، استخدم مشاركة عادية
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/pdf"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    val chooser = Intent.createChooser(shareIntent, context.getString(R.string.print_pdf_chooser_alt))
-                    context.startActivity(chooser)
-                    android.util.Log.d("PDFCreator", "Fallback: Share dialog opened")
-                } catch (shareError: Exception) {
-                    android.util.Log.e("PDFCreator", "Even share failed: ${shareError.message}", shareError)
-                    android.widget.Toast.makeText(
-                        context,
-                        "❌ Unable to open share menu: ${shareError.message}",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }, 1500) // انتظار 1.5 ثانية لقراءة الرسالة
+                openShareDialog(context, uri)
+            }, 1500)
         }
     } catch (e: Exception) {
         e.printStackTrace()
