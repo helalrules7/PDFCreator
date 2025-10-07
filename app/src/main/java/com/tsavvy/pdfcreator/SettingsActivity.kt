@@ -68,6 +68,15 @@ fun SettingsScreen(
     var selectedLanguage by remember { 
         mutableStateOf(LanguageHelper.getLanguage(context))
     }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    
+    // إخفاء رسالة النجاح بعد 3 ثوان
+    LaunchedEffect(showSuccessMessage) {
+        if (showSuccessMessage) {
+            kotlinx.coroutines.delay(3000)
+            showSuccessMessage = false
+        }
+    }
     
     // Helper function to get string resources
     fun getString(@androidx.annotation.StringRes id: Int): String {
@@ -138,6 +147,7 @@ fun SettingsScreen(
                                     selected = selectedLanguage == "ar",
                                     onClick = {
                                         selectedLanguage = "ar"
+                                        showSuccessMessage = true
                                         onLanguageChanged("ar")
                                     },
                                     role = Role.RadioButton
@@ -165,6 +175,7 @@ fun SettingsScreen(
                                     selected = selectedLanguage == "en",
                                     onClick = {
                                         selectedLanguage = "en"
+                                        showSuccessMessage = true
                                         onLanguageChanged("en")
                                     },
                                     role = Role.RadioButton
@@ -189,16 +200,20 @@ fun SettingsScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Success Message
-            if (selectedLanguage.isNotEmpty()) {
+            // Success Message (يظهر لمدة 3 ثوان فقط)
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showSuccessMessage,
+                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically(),
+                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically()
+            ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
                     ),
                     border = androidx.compose.foundation.BorderStroke(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.outline
+                        color = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Column(
@@ -212,7 +227,7 @@ fun SettingsScreen(
                         Text(
                             text = getString(R.string.language_changed),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }

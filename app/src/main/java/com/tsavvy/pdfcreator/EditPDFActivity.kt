@@ -316,87 +316,6 @@ fun EditPDFScreen(
                             contentDescription = getString(R.string.back)
                         )
                     }
-                },
-                actions = {
-                    // زر الحفظ اليدوي
-                    if (!isLoading && pages.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                isSaving = true
-                                scope.launch {
-                                    try {
-                                        savePDFToOriginalPath(context, pdfPath, pages, pageNumberSettings)
-                                        hasUnsavedChanges = false
-                                        
-                                        isSaving = false
-                                        
-                                        // عرض رسالة Toast
-                                        val fileName = pdfPath.substringAfterLast("/")
-                                        withContext(Dispatchers.Main) {
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                "تم حفظ الملف $fileName بنجاح",
-                                                android.widget.Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                        
-                                        // الانتقال إلى الشاشة الرئيسية
-                                        delay(500) // انتظار قصير لعرض Toast
-                                        withContext(Dispatchers.Main) {
-                                            val intent = Intent(context, MainActivity::class.java).apply {
-                                                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                                            }
-                                            context.startActivity(intent)
-                                            (context as? android.app.Activity)?.finish()
-                                        }
-                                    } catch (e: Exception) {
-                                        android.util.Log.e("EditPDF", "❌ فشل الحفظ اليدوي: ${e.message}")
-                                        e.printStackTrace()
-                                        
-                                        withContext(Dispatchers.Main) {
-                                            val errorMsg = when (e) {
-                                                is java.io.FileNotFoundException -> "الملف غير موجود أو تم حذفه"
-                                                is java.io.IOException -> "فشل في الحفظ: لا يمكن الوصول للملف"
-                                                else -> "فشل في حفظ الملف: ${e.message}"
-                                            }
-                                            
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                errorMsg,
-                                                android.widget.Toast.LENGTH_LONG
-                                            ).show()
-                                            
-                                            // إذا كان الملف غير موجود، ارجع للشاشة الرئيسية بعد ثانية
-                                            if (e is java.io.FileNotFoundException) {
-                                                delay(1000)
-                                                (context as? android.app.Activity)?.finish()
-                                            }
-                                        }
-                                        
-                                        errorMessage = e.message
-                                        isSaving = false
-                                    }
-                                }
-                            },
-                            enabled = !isSaving && !needsReload
-                        ) {
-                            if (isSaving) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = getString(R.string.save_pdf),
-                                    tint = if (hasUnsavedChanges) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
                 }
             )
         }
@@ -435,6 +354,63 @@ fun EditPDFScreen(
             // ==================== Dock Bar (شريط الأدوات السفلي) ====================
             if (!isLoading && pages.isNotEmpty()) {
                 MacOSDockBar(
+                    onSaveClick = {
+                        isSaving = true
+                        scope.launch {
+                            try {
+                                savePDFToOriginalPath(context, pdfPath, pages, pageNumberSettings)
+                                hasUnsavedChanges = false
+                                isSaving = false
+                                
+                                // عرض رسالة Toast
+                                val fileName = pdfPath.substringAfterLast("/")
+                                withContext(Dispatchers.Main) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "تم حفظ الملف $fileName بنجاح",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                                
+                                // الانتقال إلى الشاشة الرئيسية
+                                delay(500)
+                                withContext(Dispatchers.Main) {
+                                    val intent = Intent(context, MainActivity::class.java).apply {
+                                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                                    }
+                                    context.startActivity(intent)
+                                    (context as? android.app.Activity)?.finish()
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("EditPDF", "❌ فشل الحفظ: ${e.message}")
+                                e.printStackTrace()
+                                
+                                withContext(Dispatchers.Main) {
+                                    val errorMsg = when (e) {
+                                        is java.io.FileNotFoundException -> "الملف غير موجود أو تم حذفه"
+                                        is java.io.IOException -> "فشل في الحفظ: لا يمكن الوصول للملف"
+                                        else -> "فشل في حفظ الملف: ${e.message}"
+                                    }
+                                    
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        errorMsg,
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                    
+                                    if (e is java.io.FileNotFoundException) {
+                                        delay(1000)
+                                        (context as? android.app.Activity)?.finish()
+                                    }
+                                }
+                                
+                                errorMessage = e.message
+                                isSaving = false
+                            }
+                        }
+                    },
+                    isSaving = isSaving,
+                    hasUnsavedChanges = hasUnsavedChanges,
                     onPageNumbersClick = {
                         val intent = Intent(context, PageNumberSettingsActivity::class.java).apply {
                             putExtra("current_settings", pageNumberSettings)
@@ -449,7 +425,7 @@ fun EditPDFScreen(
                         watermarkSettingsLauncher.launch(intent)
                     },
                     isWatermarkActive = watermarkSettings != null,
-                    enabled = !isAddingPageNumbers && !isSaving && !isAddingWatermark,
+                    enabled = !isAddingPageNumbers && !isSaving && !isAddingWatermark && !needsReload,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 24.dp)
@@ -463,10 +439,13 @@ fun EditPDFScreen(
  * ==========================================
  * Dock Bar على طراز macOS
  * ==========================================
- * شريط أدوات سفلي عائم مع تأثيرات جميلة
+ * شريط أدوات سفلي عائم مع تأثير زجاجي (glass effect)
  */
 @Composable
 private fun MacOSDockBar(
+    onSaveClick: () -> Unit,
+    isSaving: Boolean,
+    hasUnsavedChanges: Boolean,
     onPageNumbersClick: () -> Unit,
     isPageNumbersActive: Boolean,
     onWatermarkClick: () -> Unit,
@@ -477,16 +456,23 @@ private fun MacOSDockBar(
     Row(
         modifier = modifier
             .shadow(
-                elevation = 16.dp,
-                shape = RoundedCornerShape(24.dp),
-                clip = false
+                elevation = 24.dp,
+                shape = RoundedCornerShape(28.dp),
+                clip = false,
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             )
             .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
-                shape = RoundedCornerShape(24.dp)
+                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f)
+                    )
+                ),
+                shape = RoundedCornerShape(28.dp)
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // زر أرقام الصفحات
@@ -506,7 +492,7 @@ private fun MacOSDockBar(
                     }
                 )
             },
-            label = "أرقام الصفحات"
+            label = "أرقام"
         )
         
         // زر العلامة المائية
@@ -526,7 +512,46 @@ private fun MacOSDockBar(
                     }
                 )
             },
-            label = "علامة مائية"
+            label = "علامة"
+        )
+        
+        // فاصل
+        androidx.compose.foundation.layout.Spacer(
+            modifier = Modifier
+                .width(2.dp)
+                .height(32.dp)
+                .background(
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(1.dp)
+                )
+        )
+        
+        // زر الحفظ
+        DockBarButton(
+            onClick = onSaveClick,
+            enabled = enabled && !isSaving,
+            isActive = hasUnsavedChanges,
+            icon = {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.5.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = when {
+                            !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            hasUnsavedChanges -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        },
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            },
+            label = "حفظ"
         )
     }
 }

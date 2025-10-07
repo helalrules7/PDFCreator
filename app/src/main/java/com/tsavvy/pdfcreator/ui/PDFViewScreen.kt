@@ -329,94 +329,90 @@ private fun openPDF(context: Context, pdfPath: String) {
 private fun printPDF(context: Context, pdfPath: String) {
     try {
         val file = File(pdfPath)
-        if (file.exists()) {
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-            
-            // محاولة استخدام PrintManager للطباعة المباشرة (Android 4.4+)
-            try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                    val printManager = context.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
-                    val jobName = "PDF_${System.currentTimeMillis()}"
-                    
-                    // حساب عدد صفحات PDF
-                    val pageCount = getPDFPageCount(file)
-                    
-                    // إنشاء PrintDocumentAdapter محسن
-                    val printAdapter = object : android.print.PrintDocumentAdapter() {
-                        override fun onWrite(
-                            pages: Array<out android.print.PageRange>?,
-                            destination: android.os.ParcelFileDescriptor?,
-                            cancellationSignal: android.os.CancellationSignal?,
-                            callback: android.print.PrintDocumentAdapter.WriteResultCallback?
-                        ) {
-                            try {
-                                val input = file.inputStream()
-                                val output = android.os.ParcelFileDescriptor.AutoCloseOutputStream(destination)
-                                input.copyTo(output)
-                                input.close()
-                                output.close()
-                                
-                                // إرجاع جميع الصفحات المطلوبة
-                                val pageRanges = pages ?: arrayOf(android.print.PageRange.ALL_PAGES)
-                                callback?.onWriteFinished(pageRanges)
-                            } catch (e: Exception) {
-                                android.util.Log.e("PDFCreator", "Error writing PDF: ${e.message}")
-                                callback?.onWriteFailed(e.message)
-                            }
-                        }
-                        
-                        override fun onLayout(
-                            oldAttributes: android.print.PrintAttributes?,
-                            newAttributes: android.print.PrintAttributes?,
-                            cancellationSignal: android.os.CancellationSignal?,
-                            callback: android.print.PrintDocumentAdapter.LayoutResultCallback?,
-                            extras: android.os.Bundle?
-                        ) {
-                            if (cancellationSignal?.isCanceled == true) {
-                                callback?.onLayoutCancelled()
-                                return
-                            }
-                            
-                            val info = android.print.PrintDocumentInfo.Builder(jobName)
-                                .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
-                                .setPageCount(pageCount) // استخدام العدد الصحيح للصفحات
-                                .build()
-                            callback?.onLayoutFinished(info, true)
-                        }
-                    }
-                    
-                    printManager.print(jobName, printAdapter, null)
-                } else {
-                    // للأنظمة الأقدم، استخدم Intent عادي
-                    val printIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/pdf"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    val printChooser = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser))
-                    context.startActivity(printChooser)
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("PDFCreator", "Error with PrintManager: ${e.message}")
-                // في حالة فشل الطباعة المباشرة، استخدم مشاركة عادية
-                val printIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.print_pdf_subject))
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                val shareIntent = Intent.createChooser(printIntent, context.getString(R.string.print_pdf_chooser_alt))
-                context.startActivity(shareIntent)
+        if (!file.exists()) {
+            android.util.Log.e("PDFCreator", "File not found: $pdfPath")
+            return
+        }
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            val printManager = context.getSystemService(Context.PRINT_SERVICE) as? android.print.PrintManager
+            if (printManager == null) {
+                android.util.Log.e("PDFCreator", "PrintManager not available")
+                return
             }
+            
+            val jobName = "${context.getString(R.string.app_name)}_${file.nameWithoutExtension}"
+            
+            // استخدام PdfDocument.Page لإنشاء PrintDocumentAdapter
+            val printAdapter = object : android.print.PrintDocumentAdapter() {
+                override fun onLayout(
+                    oldAttributes: android.print.PrintAttributes?,
+                    newAttributes: android.print.PrintAttributes?,
+                    cancellationSignal: android.os.CancellationSignal?,
+                    callback: android.print.PrintDocumentAdapter.LayoutResultCallback?,
+                    extras: android.os.Bundle?
+                ) {
+                    if (cancellationSignal?.isCanceled == true) {
+                        callback?.onLayoutCancelled()
+                        return
+                    }
+                    
+                    try {
+                        val pageCount = getPDFPageCount(file)
+                        val info = android.print.PrintDocumentInfo.Builder(jobName)
+                            .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
+                            .setPageCount(pageCount)
+                            .build()
+                        callback?.onLayoutFinished(info, true)
+                    } catch (e: Exception) {
+                        android.util.Log.e("PDFCreator", "Error in onLayout: ${e.message}")
+                        callback?.onLayoutFailed(e.message)
+                    }
+                }
+                
+                override fun onWrite(
+                    pages: Array<out android.print.PageRange>?,
+                    destination: android.os.ParcelFileDescriptor?,
+                    cancellationSignal: android.os.CancellationSignal?,
+                    callback: android.print.PrintDocumentAdapter.WriteResultCallback?
+                ) {
+                    if (cancellationSignal?.isCanceled == true) {
+                        callback?.onWriteCancelled()
+                        return
+                    }
+                    
+                    try {
+                        file.inputStream().use { input ->
+                            android.os.ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        callback?.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
+                    } catch (e: Exception) {
+                        android.util.Log.e("PDFCreator", "Error in onWrite: ${e.message}", e)
+                        callback?.onWriteFailed(e.message)
+                    }
+                }
+            }
+            
+            // فتح نافذة الطباعة
+            printManager.print(jobName, printAdapter, null)
+            android.util.Log.d("PDFCreator", "Print dialog opened successfully")
+        } else {
+            // للنسخ الأقدم من Android (قبل KitKat)
+            android.widget.Toast.makeText(
+                context,
+                "Printing requires Android 4.4 or higher",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     } catch (e: Exception) {
-        e.printStackTrace()
-        android.util.Log.e("PDFCreator", "Error printing PDF: ${e.message}")
+        android.util.Log.e("PDFCreator", "Error printing PDF: ${e.message}", e)
+        android.widget.Toast.makeText(
+            context,
+            "Error: ${e.message}",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
     }
 }
 
