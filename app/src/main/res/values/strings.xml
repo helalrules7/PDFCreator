@@ -22,7 +22,7 @@
     <string name="menu_help">المساعدة</string>
     
     <!-- Settings -->
-    <string name="settings_title">الإعدادات</string>
+    <string name="settings_title">اللغة</string>
     <string name="language_settings">إعدادات اللغة</string>
     <string name="select_language">اختر اللغة</string>
     <string name="language_arabic">العربية</string>
@@ -112,6 +112,9 @@
     <string name="enter_new_title">أدخل عنوان جديد لملف PDF</string>
     <string name="save">حفظ</string>
     <string name="cancel">إلغاء</string>
+    <string name="auto_saving">جاري الحفظ التلقائي...</string>
+    <string name="unsaved_changes">تعديلات غير محفوظة</string>
+    <string name="error_auto_save">خطأ في الحفظ التلقائي</string>
     
     <!-- Permission Messages -->
     <string name="permission_required_title">H PDF Creator</string>
@@ -158,4 +161,49 @@
     <string name="pdf_deleted">تم حذف الملف بنجاح</string>
     <string name="error_deleting_pdf">خطأ في حذف الملف</string>
     <string name="loading_pdfs">جاري تحميل الملفات...</string>
+    
+    <!-- Page Numbers -->
+    <string name="page_numbers_title">أرقام الصفحات</string>
+    <string name="page_number_position">موقع أرقام الصفحات</string>
+    <string name="header">رأس الصفحة</string>
+    <string name="footer">تذييل الصفحة</string>
+    <string name="left">يسار</string>
+    <string name="center">وسط</string>
+    <string name="right">يمين</string>
+    <string name="additional_settings">إعدادات إضافية</string>
+    <string name="start_number">رقم البداية</string>
+    <string name="font_size">حجم الخط</string>
+    <string name="show_on_first_page">عرض في الصفحة الأولى</string>
+    <string name="numbering_format">نمط الترقيم</string>
+    <string name="apply">تطبيق</string>
+    <string name="add_page_numbers">إضافة أرقام الصفحات</string>
+    <string name="remove_page_numbers">إزالة أرقام الصفحات</string>
+    <string name="page_numbers_added">تم إضافة أرقام الصفحات بنجاح</string>
+    <string name="page_numbers_removed">تم إزالة أرقام الصفحات</string>
+    
+    <!-- Watermark Strings -->
+    <string name="watermark_title">العلامة المائية</string>
+    <string name="watermark_text">نص العلامة المائية</string>
+    <string name="watermark_text_hint">أدخل النص...</string>
+    <string name="watermark_preview">معاينة العلامة المائية</string>
+    <string name="watermark_color">اللون</string>
+    <string name="watermark_font_size">حجم الخط</string>
+    <string name="watermark_opacity">الشفافية</string>
+    <string name="watermark_rotation">زاوية الميل</string>
+    <string name="watermark_added">تم إضافة العلامة المائية بنجاح</string>
+    <string name="watermark_removed">تم إزالة العلامة المائية</string>
+    
+    <!-- Color Names -->
+    <string name="color_black">أسود</string>
+    <string name="color_gray">رمادي</string>
+    <string name="color_red">أحمر</string>
+    <string name="color_blue">أزرق</string>
+    <string name="color_green">أخضر</string>
+    <string name="color_orange">برتقالي</string>
+    <string name="color_purple">بنفسجي</string>
+    
+    <!-- Additional Strings -->
+    <string name="restart_required">إعادة التشغيل مطلوبة لتغيير اللغة</string>
+    <string name="version">الإصدار</string>
+    <string name="help_description">كيفية استخدام التطبيق</string>
 </resources>

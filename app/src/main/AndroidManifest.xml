@@ -3,14 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Permissions for file access and camera -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
+    <!-- Android 13+ (API 33+) - Read media images -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="PhotoAndVideoPolicy" />
+    
+    <!-- Android 14+ (API 34+) - Selected Photos Access -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     
     <!-- Camera feature is optional -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false"
+         />
 
     <application
         android:allowBackup="true"
@@ -20,11 +28,12 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round_new"
         android:supportsRtl="true"
-        android:theme="@style/Theme.PDFCreator">
+        android:theme="@style/Theme.PDFCreator"
+        tools:ignore="RtlEnabled"
+        >
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.PDFCreator"
             android:launchMode="singleTop">
             <intent-filter>
@@ -39,35 +48,54 @@
             android:exported="false"
             android:label="@string/settings_title"
             android:theme="@style/Theme.PDFCreator"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+             />
         
         <activity
             android:name=".AboutActivity"
             android:exported="false"
             android:label="@string/about_title"
             android:theme="@style/Theme.PDFCreator"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+             />
         
         <activity
             android:name=".HelpActivity"
             android:exported="false"
             android:label="@string/help_title"
             android:theme="@style/Theme.PDFCreator"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+             />
         
         <activity
             android:name=".EditPDFActivity"
             android:exported="false"
             android:label="@string/edit_pdf_title"
             android:theme="@style/Theme.PDFCreator"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+             />
         
         <activity
             android:name=".MyPDFsActivity"
             android:exported="false"
             android:label="@string/my_pdfs_title"
             android:theme="@style/Theme.PDFCreator"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+             />
+        
+        <activity
+            android:name=".PageNumberSettingsActivity"
+            android:exported="false"
+            android:label="@string/page_numbers_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".EditPDFActivity" />
+        
+        <activity
+            android:name=".WatermarkSettingsActivity"
+            android:exported="false"
+            android:label="@string/watermark_title"
+            android:theme="@style/Theme.PDFCreator"
+            android:parentActivityName=".EditPDFActivity" />
         
         <provider
             android:name="androidx.core.content.FileProvider"
